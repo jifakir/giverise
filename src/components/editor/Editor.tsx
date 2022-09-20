@@ -137,10 +137,11 @@ const isBlockActive = (editor: BaseEditor & ReactEditor, format: any, blockType 
     const [match] = Array.from(
         Editor.nodes(editor, {
             at: Editor.unhangRange(editor, selection),
-            match: n =>
-                !Editor.isEditor(n) &&
-                SlateElement.isElement(n) &&
-                n[blockType] === format,
+            match: (n: Record<string, any>) => {
+                const isTrue = n[blockType] === format;
+                return (!Editor.isEditor(n) && SlateElement.isElement(n) && isTrue);
+            }
+
         })
     )
 
@@ -148,7 +149,7 @@ const isBlockActive = (editor: BaseEditor & ReactEditor, format: any, blockType 
 }
 
 const isMarkActive = (editor: any, format: any) => {
-    const marks = Editor.marks(editor)
+    const marks = Editor.marks(editor) as any;
     return marks ? marks[format] === true : false
 }
 
