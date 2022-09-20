@@ -83,7 +83,7 @@ const SignUpForm = ({ closeModal }: { closeModal: () => void }) => {
                     <>
                         <label className='block text-primary font-medium text-sm mb-4'>What best describes causes and awards you are interested in?</label>
                         <div className="flex gap-2 flex-wrap items-center mb-10">
-                            {tags.map(tag => <TagButton label={tag} />)}
+                            {tags.map(tag => <TagButton key={tag} label={tag} />)}
                         </div>
                         <ActionButton onClick={goNextStep} />
                     </>
