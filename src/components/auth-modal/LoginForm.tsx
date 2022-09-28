@@ -1,30 +1,27 @@
+import { notification } from 'antd';
 import React, { useEffect, useState } from 'react'
 import { BiChevronLeft, BiX } from 'react-icons/bi';
-import CountrySelect from '../country-select/CountrySelect';
+import { AuthProviderType } from '../../contexts/AuthProvider';
+import { useAuth } from '../../hooks/useAuth';
+import api from '../../utils/api';
 import ActionButton from './ActionButton';
 import GroupedInput from './GroupedButton';
 import OAuthProviderButton from './OAuthProviderButton';
-import TagButton from './TagButton';
+import ResetPassword from './ResetPassword';
 import TextInput from './TextInput';
 
 
-const tags = [
-    'STEM',
-    'Pay for exams',
-    'Tech Bootcamp',
-    'Scholarships',
-    'Entrepreneurship',
-    'Research',
-    'School Rehabilitation',
-    'Educational tools',
-    'Study abroad',
-    'Creatives',
-    'Creatives',
-];
 
 const LoginForm = ({ closeModal }: { closeModal: () => void }) => {
-
+    const { handleOAuthLogin, handleBasicLogin, authStatus } = useAuth();
     const [currentStep, setCurrentStep] = useState(1);
+    const [selectedAuthProvider, setSelectedAuthProvider] = useState('');
+    const [visibleError, setVisibleError] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [signInForm, setSignInForm] = useState({
+        id: '',
+        password: '',
+    });
 
 
     const goNextStep = () => {
@@ -36,6 +33,40 @@ const LoginForm = ({ closeModal }: { closeModal: () => void }) => {
             setCurrentStep(currentStep - 1);
         }
     }
+    const handleAuthButtonClick = (provider: AuthProviderType) => {
+        setSelectedAuthProvider(provider);
+        handleOAuthLogin?.(provider);
+    }
+
+    useEffect(() => {
+        if((authStatus === "failed" || authStatus === "success") && selectedAuthProvider) {
+            closeModal?.();
+            setSelectedAuthProvider('');
+        }
+    }, [authStatus, closeModal, selectedAuthProvider]);
+
+    const handleSignIn = async () => {
+        try {
+            setVisibleError(false);
+            if(!signInForm.id || !signInForm.password) {
+                setVisibleError(true);
+                return;
+            }
+            setLoading(true);
+            await handleBasicLogin?.(signInForm);
+            notification.success({
+                message: "login success"
+            });
+            closeModal?.();
+        } catch (error: any) {
+            // console.log("error ", error?.message);
+            notification.error({
+                message: error?.message ?? "something went wrong unable to login"
+            });
+        }
+        setLoading(false);
+    }
+
 
     return (
         <>
@@ -70,38 +101,33 @@ const LoginForm = ({ closeModal }: { closeModal: () => void }) => {
             <div className='smMax:p-4'>
                 {currentStep === 1 && (
                     <>
-                        <OAuthProviderButton logo='facebook.png' text="Sign up with Facebook" onClick={goNextStep} />
-                        <OAuthProviderButton logo='google.png' text="Continue with Google" />
-                        <OAuthProviderButton logo='tiktok.png' text="Continue with TikTok" />
-                        <OAuthProviderButton logo='linkedin.png' text="Continue with LinkedIn" />
-                        <OAuthProviderButton logo='mail-logo.png' text="Continue with Email" />
+                       <OAuthProviderButton loading={authStatus === "in-progress" && selectedAuthProvider === "facebook"} logo='facebook.png' text="Sign up with Facebook" onClick={() => handleAuthButtonClick("facebook")} />
+                        <OAuthProviderButton loading={authStatus === "in-progress" && selectedAuthProvider === "google"} logo='google.png' text="Continue with Google" onClick={() => handleAuthButtonClick('google')} />
+                        <OAuthProviderButton loading={authStatus === "in-progress" && selectedAuthProvider === "instagram"} logo='instagram_icon.png' text="Continue with Instagram" onClick={() => handleAuthButtonClick('instagram')} />
+                        <OAuthProviderButton loading={authStatus === "in-progress" && selectedAuthProvider === "linkedin"} logo='linkedin.png' text="Continue with LinkedIn" onClick={() => handleAuthButtonClick('linkedin')} />
+                        <OAuthProviderButton logo='mail-logo.png' text="Continue with Email" onClick={goNextStep} />
                     </>
                 )}
 
                 {currentStep === 2 && (
                     <>
-                        <TextInput placeholder="Email" label='Email' type="email" />
-                        <TextInput placeholder="Password" type="password" containerClass='mb-2' />
-                        <button className='text-xs text-primary-purple font-normal text-start mb-5' onClick={() => setCurrentStep(3)}>Forgot password?</button>
-                        <ActionButton label="Sign in" />
+                        <TextInput 
+                            onChange={v => setSignInForm({...signInForm, id: v})} 
+                            value={signInForm.id} 
+                            placeholder="Email" 
+                            label='Email' type="email" />
+                        <TextInput 
+                            onChange={v => setSignInForm({...signInForm, password: v})} 
+                            value={signInForm.password}
+                            placeholder="Password" type="password" containerClass='mb-2' />
+                        <button className='text-xs text-primary-purple font-normal text-start mb-5' onClick={() => setCurrentStep(3)}>
+                            Forgot password?
+                        </button>
+                        <ActionButton loading={loading} label="Sign in" onClick={handleSignIn}/>
                     </>
                 )}
 
-                {currentStep === 3 && (
-                    <>
-                        <TextInput placeholder="Enter account email" label='Email' type="email" />
-                        <GroupedInput actionText='Send code' actionDisabled={true} />
-                        <ActionButton label="Request code" onClick={goNextStep} />
-                    </>
-                )}
-
-                {currentStep === 4 && (
-                    <>
-                        <TextInput label='Create new password' type="password" />
-                        <TextInput label='Repeat password' type="password" />
-                        <ActionButton label="Create new password" />
-                    </>
-                )}
+                <ResetPassword currentStep={currentStep} setCurrentStep={setCurrentStep}/>
             </div>
         </>
     )

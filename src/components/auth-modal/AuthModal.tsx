@@ -13,7 +13,7 @@ const AuthModal = ({ visible = false, onClose }: { visible: boolean, onClose: ()
         <Modal centered mask={true} footer={null} visible={visible} width={400} title={null} closable={false} className="auth-modal">
             {/* <div className='fixed left-0 top-0 w-full h-full z-40 bg-primary bg-opacity-40' /> */}
             <div className='sm:p-4 h-[550px] flex flex-col'>
-                {activeForm === 'signup' ? <SignUpForm closeModal={onClose} /> : <LoginForm closeModal={onClose} />}
+                {activeForm === 'signup' ? <SignUpForm setActiveForm={setActiveForm} closeModal={onClose} /> : <LoginForm closeModal={onClose} />}
 
                 <div className='text-center justify-self-end'>
                     <p className='flex items-center justify-center text-base text-body'>

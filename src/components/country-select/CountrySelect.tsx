@@ -256,7 +256,7 @@ export const CountryList = [
     "Åland Islands"
 ];
 
-const CountrySelect = ({ onChange, value, label = 'What is your country of origin?', isFloatingLabel = false, }: { onChange?: (value: string) => void, value?: string, label?: string, isFloatingLabel?: boolean }) => {
+const CountrySelect = ({ onChange, value, label = 'What is your country of origin?', error, isFloatingLabel = false, }: { onChange?: (value: string) => void, value?: string, label?: string, isFloatingLabel?: boolean, error?:string }) => {
     const [filteredCountries, setFilteredCountries] = useState(CountryList);
     const [searchKeyword, setSearchKeyword] = useState('');
 
@@ -302,6 +302,7 @@ const CountrySelect = ({ onChange, value, label = 'What is your country of origi
                     <Select.Option key={country} value={country}>{country}</Select.Option>
                 ))}
             </Select>
+            {error && <p className='text-error text-sm mt-2'>{error}</p>}
         </div>
     )
 }

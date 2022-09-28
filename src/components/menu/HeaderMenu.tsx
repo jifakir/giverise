@@ -2,8 +2,13 @@ import { Avatar, Dropdown, Switch } from 'antd';
 import Link from 'next/link';
 import React, { useState } from 'react';
 import { BiDotsVerticalRounded, BiPlus, BiSearch } from 'react-icons/bi';
+import { useAuth } from '../../hooks/useAuth';
 import AuthModal from '../auth-modal/AuthModal';
 import { NotificationIcon, Off, Settings, User } from '../icons';
+
+interface ProfileMenuProps {
+    onLogout?: () => void;
+};
 
 const DefaultMenu = () => (
     <div className='w-[232px] py-3 rounded-lg drop-shadow-md bg-white px-4'>
@@ -27,7 +32,7 @@ const DefaultMenu = () => (
     </div>
 );
 
-const ProfileMenu = () => {
+const ProfileMenu = ({ onLogout }: ProfileMenuProps) => {
     return (
         <div className='w-[232px] py-3 rounded-lg drop-shadow-md bg-white px-4'>
             <div className='py-3 border-b border-[#EDF2F7]'>
@@ -59,10 +64,10 @@ const ProfileMenu = () => {
                     </Link>
                 </li>
                 <li>
-                    <a href="#" className='text-sm font-normal text-primary flex items-center py-3 hover:text-primary-purple border-b border-[#EDF2F7]'>
+                    <button onClick={onLogout} className='text-sm font-normal text-primary flex items-center py-3 hover:text-primary-purple border-b border-[#EDF2F7]'>
                         <span className='mr-3 text-secondary text-xl hover:text-primary-purple'><Off /></span>
                         Log out
-                    </a>
+                    </button>
                 </li>
                 <li className='text-sm font-normal text-primary flex py-3 hover:text-primary-purple justify-between'>
                     Dark mode
@@ -83,6 +88,7 @@ const DropdownMenu = ({ children, menu }: { children: React.ReactNode, menu: Rea
 
 
 const HeaderMenu = ({ hideActions = false }) => {
+    const { user, logout } = useAuth();
     const [isOpenAuthModal, setIsOpenAuthModal] = useState(false);
 
     const openAuthModal = () => {
@@ -98,7 +104,7 @@ const HeaderMenu = ({ hideActions = false }) => {
             <div className={`${hideActions ? 'justify-center' : ''} bg-white px-8 h-[70px] flex items-center border-b border-primary border-opacity-[0.08] smMax:bg-[#F8F9FC] smMax:h-[116px] smMax:border-0 smMax:items-end smMax:pb-6 smMax:px-5 xs:px-4`}>
                 <Link href={"/"}>
                     <a>
-                        <img src='/images/logo.png' className='max-w-full object-contain' />
+                        <img src='/images/logo.png' className='max-w-full object-contain' alt='logo' />
                     </a>
                 </Link>
                 {!hideActions ? (
@@ -110,24 +116,38 @@ const HeaderMenu = ({ hideActions = false }) => {
                             </span>
                         </div>
                         <div className="flex items-center ml-auto gap-4">
-                            <Link href={"/awards/create"}>
-                                <a className='bg-white rounded-md border hover:text-primary border-primary border-opacity-[0.15] flex items-center px-4 h-10 text-base font-medium hover:border-primary-purple hover:text-primary-purple-purple smMax:hidden'>
-                                    <span className='mr-2'><BiPlus /></span>
-                                    Create award
-                                </a>
-                            </Link>
-                            <button onClick={openAuthModal} className='bg-primary-purple rounded-md flex items-center px-8 hover:text-white h-10 text-base font-medium text-white smMax:hidden'>
-                                Login
-                            </button>
-                            <DropdownMenu menu={<ProfileMenu />}>
-                                <Avatar src="/images/dummy/profile.jpg" size={24} className="bg-[#FAFBFC] object-cover cursor-pointer" />
-                            </DropdownMenu>
-                            <button className='relative'>
-                                <NotificationIcon />
-                                <span className='absolute -top-1 -right-1 w-3 h-3 rounded-full bg-error text-white text-[8px]'>
-                                    4
-                                </span>
-                            </button>
+                            {user ? (
+                                <Link href={"/awards/create"}>
+                                    <a className='bg-white rounded-md border hover:text-primary border-primary border-opacity-[0.15] flex items-center px-4 h-10 text-base font-medium hover:border-primary-purple hover:text-primary-purple-purple smMax:hidden'>
+                                        <span className='mr-2'><BiPlus /></span>
+                                        Create award
+                                    </a>
+                                </Link>
+                            ) : (
+                                <button onClick={openAuthModal} className='bg-primary-purple rounded-md flex items-center px-8 hover:text-white h-10 text-base font-medium text-white smMax:hidden'>
+                                    Login
+                                </button>
+                            )}
+                            {user ? (
+                                <>
+                                    <DropdownMenu menu={<ProfileMenu onLogout={logout} />}>
+                                        {user.socialLogin?.avatar ? (
+                                            <img  className='w-6 h-6 object-cover rounded-full cursor-pointer' src={user?.socialLogin?.avatar} referrerPolicy="no-referrer" alt='profile pic'/>
+                                        ): (
+                                            <Avatar size={24} className="bg-[#FAFBFC] object-cover cursor-pointer text-primary text-sm font-semibold">
+                                                {user.firstName.charAt(0).toUpperCase()}
+                                            </Avatar>
+                                        )}
+                                        
+                                    </DropdownMenu>
+                                    <button className='relative'>
+                                        <NotificationIcon />
+                                        <span className='absolute -top-1 -right-1 w-3 h-3 rounded-full bg-error text-white text-[8px]'>
+                                            4
+                                        </span>
+                                    </button>
+                                </>
+                            ) : null}
                             <DropdownMenu menu={<DefaultMenu />}>
                                 <button className='text-xl hover:text-primary-purple'>
                                     <BiDotsVerticalRounded />
