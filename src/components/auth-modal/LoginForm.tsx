@@ -143,7 +143,7 @@ const LoginForm = ({
               text="Continue with Google"
               onClick={() => handleAuthButtonClick("google")}
             />
-            <OAuthProviderButton
+            {/* <OAuthProviderButton
               loading={
                 authStatus === "in-progress" &&
                 selectedAuthProvider === "instagram"
@@ -151,7 +151,7 @@ const LoginForm = ({
               logo="instagram_icon.png"
               text="Continue with Instagram"
               onClick={() => handleAuthButtonClick("instagram")}
-            />
+            /> */}
             <OAuthProviderButton
               loading={
                 authStatus === "in-progress" &&
