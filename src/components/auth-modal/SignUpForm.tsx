@@ -1,5 +1,6 @@
 import { notification } from "antd";
 import React, { useEffect, useState } from "react";
+import GooglePlacesAutocomplete from "react-google-places-autocomplete";
 import { BiChevronLeft, BiX } from "react-icons/bi";
 import useAsyncEffect from "use-async-effect";
 import { AuthProviderType } from "../../contexts/AuthProvider";
@@ -60,6 +61,7 @@ const SignUpForm = ({
     cause: [],
   });
   const [visibleError, setVisibleError] = useState(false);
+  const [selectedPlace, setSelectedPlace] = useState(null);
 
   const goNextStep = async () => {
     setVisibleError(false);
@@ -277,6 +279,7 @@ const SignUpForm = ({
         {currentStep === 2 && (
           <>
             <CountrySelect
+              placeholder="Select"
               onChange={(val) => handleOnChange("countryOfOrigin", val)}
               value={signUpData.countryOfOrigin}
               error={
@@ -286,7 +289,7 @@ const SignUpForm = ({
               }
             />
 
-            <TextInput
+            {/* <TextInput
               onChange={(val) => handleOnChange("currentCityAndCountry", val)}
               error={
                 visibleError && !signUpData.currentCityAndCountry
@@ -297,16 +300,34 @@ const SignUpForm = ({
               placeholder="Current city, country"
               helpText="Your country won’t be shown publicly"
               name="city"
-            />
-            {/* <GooglePlacesAutocomplete
-              apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAP_API_KEY}
-              selectProps={{
-                onChange: (val) => {
-                  console.log(val);
-                },
-              }}
             /> */}
-            <ActionButton onClick={goNextStep} />
+            <div className="mb-4">
+              <GooglePlacesAutocomplete
+                apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAP_API_KEY}
+                selectProps={{
+                  onChange: (val: Record<string, any>) => {
+                    console.log(val);
+                    setSelectedPlace(val as any);
+                    setSignUpData((prev) => ({
+                      ...prev,
+                      currentCityAndCountry: val.label,
+                    }));
+                  },
+                  value: selectedPlace,
+                  className: `place-auto-complete ${
+                    visibleError && !signUpData.currentCityAndCountry
+                      ? "error"
+                      : ""
+                  }`,
+                }}
+              />
+            </div>
+            <ActionButton
+              onClick={goNextStep}
+              disabled={
+                !signUpData.currentCityAndCountry || !signUpData.countryOfOrigin
+              }
+            />
           </>
         )}
 
@@ -327,7 +348,10 @@ const SignUpForm = ({
               helpText="Create something close to whatever"
               name="username"
             />
-            <ActionButton onClick={goNextStep} />
+            <ActionButton
+              onClick={goNextStep}
+              disabled={!signUpData.username}
+            />
           </>
         )}
 
@@ -346,7 +370,10 @@ const SignUpForm = ({
                 />
               ))}
             </div>
-            <ActionButton onClick={goNextStep} />
+            <ActionButton
+              onClick={goNextStep}
+              disabled={!signUpData.cause?.length}
+            />
           </>
         )}
 
@@ -416,6 +443,13 @@ const SignUpForm = ({
               onClick={handleSignUp}
               loading={loading}
               label="Signup"
+              disabled={
+                !signUpData.email ||
+                !signUpData.firstName ||
+                !signUpData.lastName ||
+                !signUpData.password ||
+                !signUpData.code
+              }
             />
 
             <p className="text-xs text-secondary mt-auto text-center mb-3">
