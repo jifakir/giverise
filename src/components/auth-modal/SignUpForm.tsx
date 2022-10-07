@@ -279,7 +279,7 @@ const SignUpForm = ({
         {currentStep === 2 && (
           <>
             <CountrySelect
-              placeholder="Select"
+              placeholder="please select a country"
               onChange={(val) => handleOnChange("countryOfOrigin", val)}
               value={signUpData.countryOfOrigin}
               error={
@@ -305,6 +305,7 @@ const SignUpForm = ({
               <GooglePlacesAutocomplete
                 apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAP_API_KEY}
                 selectProps={{
+                  placeholder: "CurrentCity and Country",
                   onChange: (val: Record<string, any>) => {
                     console.log(val);
                     setSelectedPlace(val as any);

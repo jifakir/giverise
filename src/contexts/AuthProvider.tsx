@@ -139,8 +139,8 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             count = 0;
           }
         } catch (error) {
-          //if there is something wrong then it will close popup window after 9 seconds // todo comeup with more genius logic
-          if (count >= 35) {
+          //if there is something wrong then it will close popup window after (100*300) seconds // todo comeup with more genius logic
+          if (count >= 100) {
             win?.close();
             setAuthStatus("failed");
             clearInterval(intervalId);
