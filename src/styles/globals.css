@@ -325,3 +325,29 @@ input[type="number"] {
     background-size: cover;
     background-repeat: no-repeat;
 }
+
+.place-auto-complete input:focus {
+    outline: none;
+    box-shadow: none;
+    border: none;
+}
+
+.place-auto-complete div[class$="-control"] {
+    border-color: #E2E4E8;
+    box-shadow: none !important;
+    height: 48px;
+    border-radius: 8px;
+}
+
+.place-auto-complete div[class$="-control"]:hover {
+    border-color: #6154E7;
+}
+
+.place-auto-complete.error div[class$="-control"] {
+    border-color: #FF0000;
+}
+
+.place-auto-complete span[class$="-indicatorSeparator"],
+.place-auto-complete div[class$="indicatorContainer"] {
+    display: none;
+}
