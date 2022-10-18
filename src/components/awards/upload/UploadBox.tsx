@@ -1,5 +1,6 @@
 import { Modal, Slider } from "antd";
-import { useRef, useState } from "react";
+import axios from "axios";
+import React, { useEffect, useRef, useState } from "react";
 import { AiOutlineZoomOut, AiOutlineZoomIn } from "react-icons/ai";
 import { FaPlus } from "react-icons/fa";
 import ReactCrop, { Crop, PixelCrop, centerCrop, makeAspectCrop } from "react-image-crop";
@@ -26,12 +27,12 @@ export const CropModal = ({ isVisible = false, imgSrc = '', originalFile, onSave
                     width: 100,
                     height: 25,
                 },
-                16 / 9,
+                4 / 3,
                 width,
-                height
+                height,
             ),
             width,
-            height
+            height,
         )
         setCrop(crop)
     }
@@ -74,7 +75,7 @@ export const CropModal = ({ isVisible = false, imgSrc = '', originalFile, onSave
             {imgSrc ? (
                 <>
                     <div className='h-[350px] w-full overflow-hidden mt-4'>
-                        <ReactCrop crop={crop} onChange={(_, pixelCrop) => setCrop(pixelCrop)} minWidth={588} onComplete={c => setCompletedCrop(c)}>
+                        <ReactCrop crop={crop} locked onChange={(_, pixelCrop) => setCrop(pixelCrop)} minWidth={588} onComplete={c => setCompletedCrop(c)}>
                             <img
                                 ref={imgRef}
                                 alt="Crop me"
@@ -98,7 +99,7 @@ export const CropModal = ({ isVisible = false, imgSrc = '', originalFile, onSave
         </Modal>
     )
 }
-const UploadBox = () => {
+const UploadBox = ({ onChange }:{ onChange: (val:string) => void }) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [imgSrc, setImgSrc] = useState<string>();
     const [isVisible, setIsVisible] = useState(false);
@@ -125,6 +126,19 @@ const UploadBox = () => {
         setFile(f);
         setIsVisible(false);
     }
+
+    useEffect(()=> {
+        const saveFile = async (data:FormData) => {
+            const result = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/media/upload`,data);
+            onChange(result?.data?.data?.url);
+            return result;
+        };
+        if(file){
+            const formData = new FormData();
+            formData.append('file',file!);
+            saveFile(formData);
+        }
+    },[file]);
 
     return (
         <>

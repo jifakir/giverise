@@ -140,7 +140,7 @@ const SignUpForm = ({
       setCurrentStep(2);
     }
   }, [isNewSocialUser, user]);
-
+  
   const handleOnChange = (name: string, value: string) => {
     setSignUpData({
       ...signUpData,

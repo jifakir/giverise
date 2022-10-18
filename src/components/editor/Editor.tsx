@@ -42,13 +42,15 @@ declare module 'slate' {
 }
 
 
-const RichTextEditor = ({ placeholder = 'Enter some rich text…' }) => {
+const RichTextEditor = ({ placeholder = 'Enter some rich text…', onChange, defaultValue }: 
+    {placeholder?: string, defaultValue?:Descendant[], onChange?: (v:Descendant[]) => void}
+    ) => {
     const renderElement = useCallback((props: any) => <Element {...props} />, [])
     const renderLeaf = useCallback((props: any) => <Leaf {...props} />, [])
     const [editor] = useState(() => withReact(createEditor()))
 
     return (
-        <Slate editor={editor} value={initialValue}>
+        <Slate editor={editor} value={defaultValue ?? initialValue} onChange={(v) => onChange?.(v)} >
             <div className='flex items-center gap-4 flex-wrap mb-4 xs:gap-3'>
                 <MarkButton format="bold" span={<BsTypeBold />} />
                 <MarkButton format="italic" span={<GoItalic />} />

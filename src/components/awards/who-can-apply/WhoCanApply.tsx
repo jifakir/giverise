@@ -1,10 +1,23 @@
 import React, { useState } from 'react'
 import { options, states } from '../../../dummy/data';
+import { awardForm } from '../../../pages/awards/create';
 import { CustomTagInput } from '../custom-tag-input';
 import { MultiSelectCheckBox } from '../multi-select-checkbox';
 
-const WhoCanApply = ({ fromModal = false }) => {
+type WhoProps = {
+    fromModal?: boolean
+    onChangeHandler: (name: string, val: any) => void
+    state: awardForm
+};
+
+const WhoCanApply = ({ fromModal = false, state, onChangeHandler  }:WhoProps ) => {
+
     const [selectedRegion, setSelectedRegion] = useState<'worldwide' | 'us' | 'local' | string>('');
+    const regionHandler = (v:string) => {
+        setSelectedRegion(v as string);
+        onChangeHandler('region', v);
+    };
+
     return (
         <>
             {fromModal ? (
@@ -48,13 +61,13 @@ const WhoCanApply = ({ fromModal = false }) => {
                             value: 'local',
                         },
                     ]}
-                    value='worldwide'
+                    value={selectedRegion}
                     customOption={false}
                     mode='single'
                     hideSearch={true}
                     placeholder='Select'
                     // inputClass='border-0 focus:bg-white'
-                    onChange={v => setSelectedRegion(v as string)}
+                    onChange={v => regionHandler(v as string)}
                 />
             </div>
             {selectedRegion === 'us' ? (
@@ -68,6 +81,7 @@ const WhoCanApply = ({ fromModal = false }) => {
                         )}
                         placeholder='Add states'
                         options={states}
+                        onChange={(v) => onChangeHandler('states', v)}
                         className="mb-5"
                     />
 
@@ -80,6 +94,7 @@ const WhoCanApply = ({ fromModal = false }) => {
                         )}
                         placeholder='Add nationalities'
                         options={states}
+                        onChange={(v) => onChangeHandler("nationalities",v)}
                         className="mb-5"
                     />
                 </>
@@ -96,6 +111,7 @@ const WhoCanApply = ({ fromModal = false }) => {
                         )}
                         placeholder='Add country'
                         options={states}
+                        onChange={(v) => onChangeHandler('country', v)}
                         className="mb-5"
                     />
 
@@ -108,6 +124,7 @@ const WhoCanApply = ({ fromModal = false }) => {
                         )}
                         placeholder='Add nationalities'
                         options={states}
+                        onChange={(v) => onChangeHandler('nationalities', v)}
                         className="mb-5"
                     />
 
@@ -121,6 +138,7 @@ const WhoCanApply = ({ fromModal = false }) => {
                                 <p className='text-xs text-body'>Improve discoverability of your awards by adding tags relevant to the subject matter.</p>
                             </div>
                         )}
+                        onChange={(v) => onChangeHandler('tags', v)}
                     />
                 </>
             ) : null}

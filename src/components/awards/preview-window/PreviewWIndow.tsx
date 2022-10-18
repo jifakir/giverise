@@ -13,6 +13,11 @@ import { MultiSelectCheckBox } from '../multi-select-checkbox';
 import useBreakpoint from 'antd/lib/grid/hooks/useBreakpoint';
 import WhoCanApply from '../who-can-apply';
 import { CropModal } from '../upload/UploadBox';
+import api from '../../../utils/api';
+import { options } from '../../../dummy/data';
+import axios from 'axios';
+import { awardForm } from '../../../pages/awards/create';
+import dayjs from 'dayjs';
 
 const CollapseHeader = ({ title = '', subtitle = '' }) => (
     <div className='px-6 smMax:px-0'>
@@ -26,7 +31,7 @@ const CollapseHeader = ({ title = '', subtitle = '' }) => (
     </div>
 );
 
-const WhoCanApplyModal = ({ visible = false, onClose }: { visible?: boolean; onClose: () => void }) => {
+const WhoCanApplyModal = ({ state, visible = false, onClose, onChangeHandler }: { state:awardForm, visible?: boolean; onClose: () => void, onChangeHandler: (name:string, val:any) => void}) => {
     return (
         <Modal visible={visible} closable={false} footer={null}>
             <div className="flex items-center">
@@ -35,7 +40,7 @@ const WhoCanApplyModal = ({ visible = false, onClose }: { visible?: boolean; onC
                 </button>
                 <h3 className='mx-auto text-lg font-bold text-primary'>Who can apply</h3>
             </div>
-            <WhoCanApply fromModal={true} />
+            <WhoCanApply state={state} onChangeHandler={onChangeHandler} fromModal={true} />
             <div className="flex items-center justify-end mt-6">
                 <button className='bg-primary-purple text-white font-medium text-base rounded-[4px] grid place-items-center h-12 w-[71px]'>
                     Done
@@ -45,14 +50,26 @@ const WhoCanApplyModal = ({ visible = false, onClose }: { visible?: boolean; onC
     )
 }
 
-const PreviewWIndow = ({ visible = false, onClose }: { visible?: boolean, onClose: () => void }) => {
+ type PreviewProps = {
+    visible: boolean,
+    onClose: () => void,
+    state:awardForm,
+    onChangeHandler: (name:string, val:any) => void
+ };
+
+const PreviewWIndow = ({ visible = false, onClose, state, onChangeHandler }:PreviewProps) => {
     const breakpoint = useBreakpoint();
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [visbleWhoCanApply, setVisibleWhoCanApply] = useState(false);
     const [visibleCropModal, setVisibleCropModal] = useState(false);
     const [file, setFile] = useState<File>();
-    const [imgSrc, setImgSrc] = useState<string>();
-
+    const [imgSrc, setImgSrc] = useState<string>(state?.coverMedia);
+    const [team, setTeam] = useState('');
+    const [beneficiaries, setBeneficiary] = useState('');
+    const [winner, setWinner] = useState('');
+    const [firstRunner, setFirstRunner] = useState('');
+    const [secondRunner, setSecondRunner] = useState('');
+    const [role, setRole] = useState<string | string[]>('');
 
     const onSave = (f: File) => {
         setFile(f);
@@ -79,8 +96,17 @@ const PreviewWIndow = ({ visible = false, onClose }: { visible?: boolean, onClos
         setFile(file);
     }
 
-    return (
+    const handleSubmit = async (isDraft:boolean) => {
+        const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/campaigns`,{
+                        ...state,
+                        isDraft
+                    });
+        console.log(state);
+        console.log(res);
+    };
 
+
+    return (
         <Drawer width={"100vw"} visible={visible} closable={false} bodyStyle={{ padding: '0px', backgroundColor: breakpoint.lg ? '#F3F3F3' : '#fff' }}>
             <div className="flex bg-white items-center justify-between px-8 border-b border-primary-stroke h-[70px] smMax:border-0 smMax:h-[100px] smMax:bg-[#F8F9FC]">
                 <img src='/images/logo.png' className='max-w-full object-cover smMax:hidden' />
@@ -107,7 +133,14 @@ const PreviewWIndow = ({ visible = false, onClose }: { visible?: boolean, onClos
                             </div>
                         </div>
                         <div className='relative w-[60%] smMax:w-full'>
-                            <TextInput floatingLabel={true} label='Award title' className='pt-6 px-3.5 overflow-hidden placeholder-shown:text-ellipsis placeholder:text-ellipsis placeholder:whitespace-nowrap' placeholder="Award for Nigerian..." />
+                            <TextInput 
+                                value={state?.title} 
+                                onChange={(v) => onChangeHandler('title', v)} 
+                                floatingLabel={true} 
+                                label='Award title'
+                                placeholder="Enter award title"
+                                className='pt-6 px-3.5 overflow-hidden placeholder-shown:text-ellipsis placeholder:text-ellipsis placeholder:whitespace-nowrap' 
+                                />
                             <span className='absolute w-5 h-5 bg-primary-purple bg-opacity-5 text-secondary text-xs rounded-full right-4 top-4 smMax:right-3 grid place-items-center'>
                                 5
                             </span>
@@ -126,7 +159,7 @@ const PreviewWIndow = ({ visible = false, onClose }: { visible?: boolean, onClos
                             </button>
                         </div>
                         <div className='w-[60%] smMax:w-full'>
-                            <img src={imgSrc ? imgSrc : "/images/dummy/preview.jpg"} className="object-cover w-full h-[202px] rounded-lg" />
+                            <img src={imgSrc ? state.coverMedia : "/images/dummy/preview.jpg"} className="object-cover w-full h-[202px] rounded-lg" />
                         </div>
                     </div>
                     <div className="px-10 flex smMax:flex-col smMax:px-4 py-4 border-b border-primary-stroke">
@@ -140,7 +173,9 @@ const PreviewWIndow = ({ visible = false, onClose }: { visible?: boolean, onClos
                             </div>
                         </div>
                         <div className='w-[60%] smMax:w-full'>
-                            <RichTextEditor />
+                            <RichTextEditor 
+                                defaultValue={state?.description}
+                                onChange={(v) => onChangeHandler('description',v)} />
                         </div>
                     </div>
                     <div className="px-10  smMax:px-4 py-4 border-b border-primary-stroke">
@@ -151,24 +186,16 @@ const PreviewWIndow = ({ visible = false, onClose }: { visible?: boolean, onClos
                                 <button onClick={() => setVisibleWhoCanApply(true)}><Edit /></button>
                             </div>
                             <div className="flex items-center gap-2 flex-wrap mt-2">
-                                <div className='flex items-center gap-[3px] rounded-[3px] bg-primary-purple bg-opacity-5 border border-[#EAE9F2] text-primary text-xs px-3 py-1'>
-                                    Nigerians
-                                    <button className='text-sm'>
-                                        <BsX />
-                                    </button>
-                                </div>
-                                <div className='flex items-center gap-[3px] rounded-[3px] bg-primary-purple bg-opacity-5 border border-[#EAE9F2] text-primary text-xs px-3 py-1'>
-                                    Ethiopian
-                                    <button className='text-sm'>
-                                        <BsX />
-                                    </button>
-                                </div>
-                                <div className='flex items-center gap-[3px] rounded-[3px] bg-primary-purple bg-opacity-5 border border-[#EAE9F2] text-primary text-xs px-3 py-1'>
-                                    Indian
-                                    <button className='text-sm'>
-                                        <BsX />
-                                    </button>
-                                </div>
+                                {
+                                    state?.nationalities?.map((v:string, idx:number) => (
+                                        <div key={idx} className='flex items-center gap-[3px] rounded-[3px] bg-primary-purple bg-opacity-5 border border-[#EAE9F2] text-primary text-xs px-3 py-1'>
+                                            {v}
+                                            <button className='text-sm'>
+                                                <BsX />
+                                            </button>
+                                        </div>
+                                    ))
+                                }
                             </div>
                         </div>
                         <div className="mb-8">
@@ -178,37 +205,29 @@ const PreviewWIndow = ({ visible = false, onClose }: { visible?: boolean, onClos
                                 <span><Edit /></span>
                             </div>
                             <div className="flex items-center gap-2 flex-wrap mt-2">
-                                <div className='flex items-center gap-[3px] rounded-[3px] bg-primary-purple bg-opacity-10 border border-[#EAE9F2] text-primary text-xs px-3 py-1'>
-                                    WAEC
-                                    <button className='text-sm'>
-                                        <BsX />
-                                    </button>
-                                </div>
-                                <div className='flex items-center gap-[3px] rounded-[3px] bg-primary-purple bg-opacity-10 border border-[#EAE9F2] text-primary text-xs px-3 py-1'>
-                                    STEM
-                                    <button className='text-sm'>
-                                        <BsX />
-                                    </button>
-                                </div>
-                                <div className='flex items-center gap-[3px] rounded-[3px] bg-primary-purple bg-opacity-10 border border-[#EAE9F2] text-primary text-xs px-3 py-1'>
-                                    NGO
-                                    <button className='text-sm'>
-                                        <BsX />
-                                    </button>
-                                </div>
+                                {
+                                    state?.categories.map((cat:string, idx:number) => (
+                                        <div key={`category_${idx}`} className='flex items-center gap-[3px] rounded-[3px] bg-primary-purple bg-opacity-10 border border-[#EAE9F2] text-primary text-xs px-3 py-1'>
+                                            {cat}
+                                            <button className='text-sm'>
+                                                <BsX />
+                                            </button>
+                                        </div>
+                                    ))
+                                }
                             </div>
                         </div>
                         <div className="mb-8">
                             <h3 className='text-lg font-medium text-[#1E1147]'>Application deadline</h3>
                             <div className="flex items-center text-xs text-body gap-2">
-                                <span>December 11, 2022</span>
+                                <span>{dayjs(state?.deadline).format('DD-MM-YYYY')}</span>
                                 <span><Edit /></span>
                             </div>
                         </div>
                         <div className="">
                             <h3 className='text-lg font-medium text-[#1E1147]'>Award total</h3>
                             <div className="flex items-center text-xs text-body gap-2">
-                                <span>$5,000</span>
+                                <span>${state?.award_amount + state?.tip_amount}</span>
                                 <span><Edit /></span>
                             </div>
                         </div>
@@ -223,15 +242,26 @@ const PreviewWIndow = ({ visible = false, onClose }: { visible?: boolean, onClos
                                             mode='single'
                                             hideSearch={true}
                                             placeholder='Select'
+                                            options={[
+                                                {
+                                                    label: 'Education',
+                                                    value: 'education'
+                                                },
+                                                {
+                                                    label: 'Education 2',
+                                                    value: 'education2'
+                                                },
+                                            ]}
+                                            onChange={v => onChangeHandler('education', v)}
                                             label={<label className='text-sm text-primary font-medium mb-2 block'>Education level</label>}
                                         />
                                     </div>
                                     <div>
                                         <label className='text-sm text-primary font-medium mb-6 block'>Gender</label>
                                         <div className="flex items-center gap-4">
-                                            <CustomRadio label='Both' name='gender' value='both' size='lg' />
-                                            <CustomRadio label='Male' name='gender' value='male' size='lg' />
-                                            <CustomRadio label='Female' name='gender' value='female' size='lg' />
+                                            <CustomRadio label='Both' onChange={v => onChangeHandler('gender', v.target.value)} name='gender' value='both' size='lg' />
+                                            <CustomRadio label='Male' onChange={v => onChangeHandler('gender', v.target.value)} name='gender' value='male' size='lg' />
+                                            <CustomRadio label='Female' onChange={v => onChangeHandler('gender', v.target.value)} name='gender' value='female' size='lg' />
                                         </div>
                                     </div>
                                     <div>
@@ -240,6 +270,17 @@ const PreviewWIndow = ({ visible = false, onClose }: { visible?: boolean, onClos
                                             mode='single'
                                             hideSearch={true}
                                             placeholder='Select'
+                                            options={[
+                                                {
+                                                    label: 'School',
+                                                    value: 'school'
+                                                },
+                                                {
+                                                    label: 'School 2',
+                                                    value: 'school2'
+                                                },
+                                            ]}
+                                            onChange={v => onChangeHandler('school', v)}
                                             label={<label className='text-sm text-primary font-medium mb-2 block'>School(s)</label>}
                                         />
                                     </div>
@@ -249,6 +290,17 @@ const PreviewWIndow = ({ visible = false, onClose }: { visible?: boolean, onClos
                                             mode='single'
                                             hideSearch={true}
                                             placeholder='Select'
+                                            onChange={v => onChangeHandler('study_field', v)}
+                                            options={[
+                                                {
+                                                    label: 'Study',
+                                                    value: 'study'
+                                                },
+                                                {
+                                                    label: 'Study 2',
+                                                    value: 'study2'
+                                                },
+                                            ]}
                                             label={<label className='text-sm text-primary font-medium mb-2 block'>Field of study</label>}
                                         />
                                     </div>
@@ -258,6 +310,11 @@ const PreviewWIndow = ({ visible = false, onClose }: { visible?: boolean, onClos
                                             mode='single'
                                             hideSearch={true}
                                             placeholder='Select'
+                                            onChange={v => onChangeHandler('age_range', v)}
+                                            options={[
+                                                {label: '50', value: '50'},
+                                                {label: '60', value: '60'},
+                                            ]}
                                             label={<label className='text-sm text-primary font-medium mb-2 block'>Age range</label>}
                                         />
                                     </div>
@@ -267,7 +324,7 @@ const PreviewWIndow = ({ visible = false, onClose }: { visible?: boolean, onClos
                         <Collapse.Panel key={'2'} header={<CollapseHeader title='Documents' subtitle='Would you like your scholarship applicants to submit any media files or documents (video, image, audio, word, PDF)' />}>
                             <div className="px-6 smMax:px-0">
                                 <div className='xl:max-w-[80%]'>
-                                    <TextInput placeholder='File description or name (e.g. 2022 GRE Result Transcript)' />
+                                    <TextInput value={state?.document_description} onChange={v => onChangeHandler('document_description', v)} placeholder='File description or name (e.g. 2022 GRE Result Transcript)' />
                                     <div className="border rounded-lg border-primary-stroke grid grid-cols-3 smMax:grid-cols-2 gap-4 p-4 mb-4">
                                         <label className='flex items-center cursor-pointer'>
                                             <input type="checkbox" className='w-[22px] h-[22px] rounded-[4px] border-2 border-body checked:border-primary-purple text-primary-purple focus:ring-0 focus:ring-offset-0' />
@@ -323,9 +380,9 @@ const PreviewWIndow = ({ visible = false, onClose }: { visible?: boolean, onClos
                             <div className="px-6 smMax:px-0">
                                 <div className="grid grid-cols-3 smMax:grid-cols-1 gap-6">
                                     <div className="col-span-2 smMax:col-span-full">
-                                        <RichTextEditor placeholder='Essay desciption' />
+                                        <RichTextEditor onChange={(v) => onChangeHandler('screeningEssay', v)} placeholder='Essay desciption' />
                                         <div className="relative mt-4">
-                                            <TextInput label='Essay length' placeholder='Enter max word length for essay' />
+                                            <TextInput value={state?.word_length} onChange={v => onChangeHandler('word_length', v)} label='Essay length' placeholder='Enter max word length for essay' />
                                             <span className='absolute bottom-2 text-secondary text-sm flex items-center right-1 h-8 bg-white rounded-r px-4 border-l border-primary-stroke'>
                                                 Words
                                             </span>
@@ -401,7 +458,7 @@ const PreviewWIndow = ({ visible = false, onClose }: { visible?: boolean, onClos
                                         <div>
                                             <label className='mb-2 text-body text-base block'>Ideal answer</label>
                                             <div className="flex">
-                                                <TextInput className='w-[80px] h-[42px] rounded-[4px]' />
+                                                <TextInput value={state?.gpa!} onChange={v => onChangeHandler('gpa', v)} className='w-[80px] h-[42px] rounded-[4px]' />
                                                 <span className='ml-2 text-xs text-secondary mt-3'>minimum</span>
                                             </div>
                                         </div>
@@ -416,24 +473,24 @@ const PreviewWIndow = ({ visible = false, onClose }: { visible?: boolean, onClos
                         <Collapse.Panel key={'5'} header={<CollapseHeader title='Award Distribution' subtitle='Narrow down your candidates' />}>
                             <div className="px-6 max-w-[410px] smMax:max-w-full smMax:px-0">
                                 <div className="mb-4">
-                                    <TextInput label='Total number of beneficiaries' />
+                                    <TextInput value={state?.beneficiary} onChange={(v) => onChangeHandler('beneficiary', v)} label='Total number of beneficiaries' />
                                 </div>
                                 <div className="mb-4">
                                     <label className='text-sm font-medium text-primary'>Distribute fund by position</label>
                                     <div className="flex items-center gap-4 my-4">
-                                        <CustomRadio label='Yes' name='distribute' />
-                                        <CustomRadio label='No' name='distribute' />
+                                        <CustomRadio onChange={(v) => onChangeHandler('distribute', v)} label='Yes' name='distribute' />
+                                        <CustomRadio onChange={(v) => onChangeHandler('distribute', v)} label='No' name='distribute' />
                                     </div>
                                     <p className='text-xs text-body'>Total award will be distributed according to your  settings</p>
                                 </div>
                                 <div className="mb-4">
-                                    <TextInput label='Winner' />
+                                    <TextInput value={state?.winner} onChange={(v) => onChangeHandler('winner', v)} label='Winner' />
                                 </div>
                                 <div className="mb-4">
-                                    <TextInput label='2. First Runner Up' />
+                                    <TextInput value={state?.first_runner} onChange={(v) => onChangeHandler('first_runner', v)} label='2. First Runner Up' />
                                 </div>
                                 <div className="mb-4">
-                                    <TextInput label='3. Second Runner Up' />
+                                    <TextInput value={state?.second_runner} onChange={(v) => onChangeHandler('second_runner', v)} label='3. Second Runner Up' />
                                 </div>
                                 <button className='text-primary-purple text-base flex items-center font-normal'>
                                     <span className='mr-2 text-xs'><FaPlus /></span>
@@ -447,7 +504,7 @@ const PreviewWIndow = ({ visible = false, onClose }: { visible?: boolean, onClos
                                     <p className='mb-2'>Invite multiple team members</p>
                                     <div className="flex items-center gap-4 smMax:flex-col">
                                         <div className='w-6/12 smMax:w-full'>
-                                            <TextInput label='Email' placeholder='Enter valid email' containerClass='mb-0' />
+                                            <TextInput value={team} onChange={(v) => setTeam(v)} label='Email' placeholder='Enter valid email' containerClass='mb-0' />
                                         </div>
                                         <div className='w-6/12 smMax:w-full'>
                                             <MultiSelectCheckBox
@@ -456,6 +513,7 @@ const PreviewWIndow = ({ visible = false, onClose }: { visible?: boolean, onClos
                                                 mode='single'
                                                 hideSearch={true}
                                                 placeholder='Select'
+                                                onChange={(v) => setRole(v)}
                                                 label={<label className='text-sm text-primary font-medium block mb-2'>Role</label>}
                                             />
                                         </div>
@@ -536,15 +594,17 @@ const PreviewWIndow = ({ visible = false, onClose }: { visible?: boolean, onClos
                 </div>
             </div>
             <div className="px-10 smMax:px-4 sm:h-[100px] smMax:mt-0 border-t border-primary-stroke mt-16 flex justify-between smMax:justify-center smMax:py-4 items-center smMax:flex-col">
-                <button className='smMax:w-full smMax:justify-center flex items-center bg-white rounded-lg border border-primary-stroke text-primary text-base font-medium h-[52px] smMax:h-14 px-4'>
+                <button onClick={() => handleSubmit(true)} className='smMax:w-full smMax:justify-center flex items-center bg-white rounded-lg border border-primary-stroke text-primary text-base font-medium h-[52px] smMax:h-14 px-4'>
                     <span className='mr-2'><AiOutlineCloud /></span>
                     Save for later
                 </button>
-                <button className='smMax:w-full smMax:justify-center smMax:mt-4 bg-primary-purple text-white flex items-center text-base font-semibold h-[52px] smMax:h-14 px-4 rounded-lg'>
+                <button onClick={() => handleSubmit(false)} className='smMax:w-full smMax:justify-center smMax:mt-4 bg-primary-purple text-white flex items-center text-base font-semibold h-[52px] smMax:h-14 px-4 rounded-lg'>
                     <span className='font-normal mr-1'>Next:</span> Review & Post
                 </button>
             </div>
             <WhoCanApplyModal
+                state={state}
+                onChangeHandler={onChangeHandler}
                 visible={visbleWhoCanApply}
                 onClose={() => setVisibleWhoCanApply(false)} />
             <CropModal
