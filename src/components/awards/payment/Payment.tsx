@@ -72,27 +72,26 @@ const Payment = ({ state, onChangeHandler }: { state:awardForm, onChangeHandler:
     const [cards, setCard] = useState([]);
     const [selectedCard, setSelectedCard] = useState(cards[0]);
 
-    const amountHandler = (v:string) => {
-        onChangeHandler('award_amount', v);
-        setAmount(v);
-    };
-
-    const tipHandler = (v:string) => {
-        onChangeHandler('tip_amount', v);
-        setTip(v);
-    }
 
     useEffect(() => {
         const fetchData = async () => {
-            const res = await api('/payment-gateway/stripe/cardlist');
-            console.log("Cards", res);
-            setCard(res?.data?.data?.map((itm:any) => ({
+            try{
+                const res = await api('/payment-gateway/stripe/cardlist');
+                console.log("Res: ", res);
+                setCard(res?.data?.data?.map((itm:any) => ({
                 label: `XXXX XXXX XXXX ${itm.card.last4}`, 
                 value: itm.card.last4, 
                 type: itm.card.brand})));
+            }catch(err){
+                console.log("Card error",err);
+            }
         };
-        fetchData();
-    },[]);
+        if(!setShowCardModal){
+            fetchData();
+        }
+    },[setShowCardModal]);
+
+    const { award_amount, tip_amount } = state;
 
     return (
         <>

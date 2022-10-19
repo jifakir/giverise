@@ -1,5 +1,5 @@
 import { Drawer, Collapse, Modal } from 'antd';
-import React, { useRef, useState } from 'react'
+import React, { ChangeEvent, useRef, useState } from 'react'
 import { AiOutlineCloud } from 'react-icons/ai';
 import { BiInfoCircle } from 'react-icons/bi';
 import { BsX, BsPlusCircle, BsCheckCircle, BsArrowLeftShort } from 'react-icons/bs';
@@ -64,12 +64,9 @@ const PreviewWIndow = ({ visible = false, onClose, state, onChangeHandler }:Prev
     const [visibleCropModal, setVisibleCropModal] = useState(false);
     const [file, setFile] = useState<File>();
     const [imgSrc, setImgSrc] = useState<string>(state?.coverMedia);
-    const [team, setTeam] = useState('');
-    const [beneficiaries, setBeneficiary] = useState('');
-    const [winner, setWinner] = useState('');
-    const [firstRunner, setFirstRunner] = useState('');
-    const [secondRunner, setSecondRunner] = useState('');
-    const [role, setRole] = useState<string | string[]>('');
+    const [email, setEmail] = useState('');
+    const [docFiles, setFiles] = useState<string[]>([]);
+    const [docDescription, setDescription] = useState<string>('');
 
     const onSave = (f: File) => {
         setFile(f);
@@ -96,15 +93,87 @@ const PreviewWIndow = ({ visible = false, onClose, state, onChangeHandler }:Prev
         setFile(file);
     }
 
-    const handleSubmit = async (isDraft:boolean) => {
-        const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/campaigns`,{
-                        ...state,
-                        isDraft
-                    });
-        console.log(state);
-        console.log(res);
+    const addTeam = (val:string) => {
+        if(!email) return;
+        try{
+            const res = api(`/invitations`,{
+                email,
+                roleId: val,
+            });
+            console.log(res);
+        }catch(err){
+            console.log(err);
+        }
     };
 
+    const addDocument = () => {
+
+        if(!docDescription) return;
+        if(docFiles.length === 0) return;
+        onChangeHandler('documents',[...state.documents,{
+            description: docDescription,
+            files: docFiles
+        }]);
+        setDescription('');
+        setFiles([]);
+    };
+
+    const removeDocument = (idx:number) => {
+        let documents = [...state.documents];
+        documents.splice(idx,1);
+        onChangeHandler('documents', documents);
+    };
+
+    const fileChangeHandler = (e:ChangeEvent<HTMLInputElement>) => {
+        console.log(`${e.target.value}: `, e.target.checked);
+        const checked = e.target.checked;
+        const value = e.target.value;
+        if(checked){
+            setFiles([...docFiles, value]);
+        }else{
+            setFiles([...docFiles.filter( itm => itm !== value)]);
+        }
+        console.log(docFiles);
+    };
+
+    const handleSubmit = async (isDraft:boolean) => {
+
+        const { 
+            education, school, study_field, gender, 
+            age_range, word_length, beneficiary,
+            winner, first_runner, second_runner } = state;
+
+        const formBody = {
+            ...state,
+            isDraft,
+            criteria: {
+                education,
+                school,
+                study_field,
+                gender,
+                age_range
+            },
+            screeningEssay: {
+                description: '',
+                word_length
+            },
+            awardDistribution: {
+                beneficiary,
+                winner,
+                first_runner,
+                second_runner
+            }
+        };
+
+        try{
+            const res = await api(`/campaigns`, formBody);
+            console.log(state);
+            console.log(res);
+        }catch(err){
+            console.log(err);
+        }
+        
+    };
 
     return (
         <Drawer width={"100vw"} visible={visible} closable={false} bodyStyle={{ padding: '0px', backgroundColor: breakpoint.lg ? '#F3F3F3' : '#fff' }}>
@@ -159,7 +228,7 @@ const PreviewWIndow = ({ visible = false, onClose, state, onChangeHandler }:Prev
                             </button>
                         </div>
                         <div className='w-[60%] smMax:w-full'>
-                            <img src={imgSrc ? state.coverMedia : "/images/dummy/preview.jpg"} className="object-cover w-full h-[202px] rounded-lg" />
+                            <img src={imgSrc ? imgSrc : "/images/dummy/preview.jpg"} alt="img" className="object-cover w-full h-[202px] rounded-lg" />
                         </div>
                     </div>
                     <div className="px-10 flex smMax:flex-col smMax:px-4 py-4 border-b border-primary-stroke">
@@ -324,30 +393,30 @@ const PreviewWIndow = ({ visible = false, onClose, state, onChangeHandler }:Prev
                         <Collapse.Panel key={'2'} header={<CollapseHeader title='Documents' subtitle='Would you like your scholarship applicants to submit any media files or documents (video, image, audio, word, PDF)' />}>
                             <div className="px-6 smMax:px-0">
                                 <div className='xl:max-w-[80%]'>
-                                    <TextInput value={state?.document_description} onChange={v => onChangeHandler('document_description', v)} placeholder='File description or name (e.g. 2022 GRE Result Transcript)' />
+                                    <TextInput value={docDescription} onChange={v => setDescription(v)} placeholder='File description or name (e.g. 2022 GRE Result Transcript)' />
                                     <div className="border rounded-lg border-primary-stroke grid grid-cols-3 smMax:grid-cols-2 gap-4 p-4 mb-4">
                                         <label className='flex items-center cursor-pointer'>
-                                            <input type="checkbox" className='w-[22px] h-[22px] rounded-[4px] border-2 border-body checked:border-primary-purple text-primary-purple focus:ring-0 focus:ring-offset-0' />
+                                            <input onChange={(e) => fileChangeHandler(e)} value={'word'} type="checkbox" className='w-[22px] h-[22px] rounded-[4px] border-2 border-body checked:border-primary-purple text-primary-purple focus:ring-0 focus:ring-offset-0' />
                                             <span className='text-body text-sm font-normal ml-2'>Word document</span>
                                         </label>
                                         <label className='flex items-center cursor-pointer'>
-                                            <input type="checkbox" className='w-[22px] h-[22px] rounded-[4px] border-2 border-body checked:border-primary-purple text-primary-purple focus:ring-0 focus:ring-offset-0' />
+                                            <input onChange={(e) => fileChangeHandler(e)} value={'image'} type="checkbox" className='w-[22px] h-[22px] rounded-[4px] border-2 border-body checked:border-primary-purple text-primary-purple focus:ring-0 focus:ring-offset-0' />
                                             <span className='text-body text-sm font-normal ml-2'>Image</span>
                                         </label>
                                         <label className='flex items-center cursor-pointer'>
-                                            <input type="checkbox" className='w-[22px] h-[22px] rounded-[4px] border-2 border-body checked:border-primary-purple text-primary-purple focus:ring-0 focus:ring-offset-0' />
+                                            <input onChange={(e) => fileChangeHandler(e)} value={'presentation'} type="checkbox" className='w-[22px] h-[22px] rounded-[4px] border-2 border-body checked:border-primary-purple text-primary-purple focus:ring-0 focus:ring-offset-0' />
                                             <span className='text-body text-sm font-normal ml-2'>Presentation</span>
                                         </label>
                                         <label className='flex items-center cursor-pointer'>
-                                            <input type="checkbox" className='w-[22px] h-[22px] rounded-[4px] border-2 border-body checked:border-primary-purple text-primary-purple focus:ring-0 focus:ring-offset-0' />
+                                            <input onChange={(e) => fileChangeHandler(e)} value={'pdf'} type="checkbox" className='w-[22px] h-[22px] rounded-[4px] border-2 border-body checked:border-primary-purple text-primary-purple focus:ring-0 focus:ring-offset-0' />
                                             <span className='text-body text-sm font-normal ml-2'>PDF</span>
                                         </label>
                                         <label className='flex items-center cursor-pointer'>
-                                            <input type="checkbox" className='w-[22px] h-[22px] rounded-[4px] border-2 border-body checked:border-primary-purple text-primary-purple focus:ring-0 focus:ring-offset-0' />
+                                            <input onChange={(e) => fileChangeHandler(e)} value={'video'} type="checkbox" className='w-[22px] h-[22px] rounded-[4px] border-2 border-body checked:border-primary-purple text-primary-purple focus:ring-0 focus:ring-offset-0' />
                                             <span className='text-body text-sm font-normal ml-2'>Video</span>
                                         </label>
                                         <label className='flex items-center cursor-pointer'>
-                                            <input type="checkbox" className='w-[22px] h-[22px] rounded-[4px] border-2 border-body checked:border-primary-purple text-primary-purple focus:ring-0 focus:ring-offset-0' />
+                                            <input onChange={(e) => fileChangeHandler(e)} value={'spreadsheet'} type="checkbox" className='w-[22px] h-[22px] rounded-[4px] border-2 border-body checked:border-primary-purple text-primary-purple focus:ring-0 focus:ring-offset-0' />
                                             <span className='text-body text-sm font-normal ml-2'>Spreadsheet</span>
                                         </label>
                                     </div>
@@ -355,24 +424,21 @@ const PreviewWIndow = ({ visible = false, onClose, state, onChangeHandler }:Prev
                                         <p>Maximum video length</p>
                                         <p>10s</p>
                                     </div>
-                                    <button className='flex items-center h-10 w-[90px] mb-6 justify-center bg-primary-purple bg-opacity-10 rounded-[4px] font-medium text-primary'>
+                                    <button onClick={addDocument} className='flex items-center h-10 w-[90px] mb-6 justify-center bg-primary-purple bg-opacity-10 rounded-[4px] font-medium text-primary'>
                                         <span className='mr-2'><FaPlus /></span>
                                         Add
                                     </button>
-                                    <div className='flex items-center mb-3 text-body text-sm font-normal'>
-                                        <div className='w-2 h-2 rounded-full bg-primary mr-2' />
-                                        Video recording of you (pdf, audio, word)
-                                        <button className="text-body text-2xl ml-auto">
-                                            <DeleteIcon />
-                                        </button>
-                                    </div>
-                                    <div className='flex items-center mb-3 text-body text-sm font-normal'>
-                                        <div className='w-2 h-2 rounded-full bg-primary mr-2' />
-                                        WAEC result (Image, PDF)
-                                        <button className="text-body text-2xl ml-auto">
-                                            <DeleteIcon />
-                                        </button>
-                                    </div>
+                                    {
+                                        state?.documents.map((doc, idx) => (
+                                        <div key={`document_${idx}`} className='flex items-center mb-3 text-body text-sm font-normal'>
+                                            <div className='w-2 h-2 rounded-full bg-primary mr-2'/>
+                                                {doc.description} ({doc.files.join(', ')})
+                                            <button onClick={() => removeDocument(idx)} className="text-body text-2xl ml-auto">
+                                                <DeleteIcon />
+                                            </button>
+                                        </div>
+                                        ))
+                                    }
                                 </div>
                             </div>
                         </Collapse.Panel>
@@ -478,8 +544,8 @@ const PreviewWIndow = ({ visible = false, onClose, state, onChangeHandler }:Prev
                                 <div className="mb-4">
                                     <label className='text-sm font-medium text-primary'>Distribute fund by position</label>
                                     <div className="flex items-center gap-4 my-4">
-                                        <CustomRadio onChange={(v) => onChangeHandler('distribute', v)} label='Yes' name='distribute' />
-                                        <CustomRadio onChange={(v) => onChangeHandler('distribute', v)} label='No' name='distribute' />
+                                        <CustomRadio onChange={(v) => onChangeHandler('distribute', v)} label='Yes' value={'true'} name='distribute' />
+                                        <CustomRadio onChange={(v) => onChangeHandler('distribute', v)} label='No' value={'false'} name='distribute' />
                                     </div>
                                     <p className='text-xs text-body'>Total award will be distributed according to your  settings</p>
                                 </div>
@@ -504,16 +570,16 @@ const PreviewWIndow = ({ visible = false, onClose, state, onChangeHandler }:Prev
                                     <p className='mb-2'>Invite multiple team members</p>
                                     <div className="flex items-center gap-4 smMax:flex-col">
                                         <div className='w-6/12 smMax:w-full'>
-                                            <TextInput value={team} onChange={(v) => setTeam(v)} label='Email' placeholder='Enter valid email' containerClass='mb-0' />
+                                            <TextInput value={email} onChange={(v) => setEmail(v)} label='Email' placeholder='Enter valid email' containerClass='mb-0' />
                                         </div>
                                         <div className='w-6/12 smMax:w-full'>
                                             <MultiSelectCheckBox
-                                                options={['Admin', 'Member']}
+                                                options={[{label: 'Admin', value: '0'},{label: 'Member', value: '1'}]}
                                                 customOption={false}
                                                 mode='single'
                                                 hideSearch={true}
                                                 placeholder='Select'
-                                                onChange={(v) => setRole(v)}
+                                                onChange={(v) => addTeam(v as string)}
                                                 label={<label className='text-sm text-primary font-medium block mb-2'>Role</label>}
                                             />
                                         </div>
@@ -573,7 +639,7 @@ const PreviewWIndow = ({ visible = false, onClose, state, onChangeHandler }:Prev
                                         </div>
                                         <div className="w-2/12 smMax:w-4/12 mr-auto">
                                             <MultiSelectCheckBox
-                                                options={['Admin', 'Member']}
+                                                options={[{label: 'Admin', value: '0'},{label: 'Member', value: '1'}]}
                                                 customOption={false}
                                                 mode='single'
                                                 hideSearch={true}

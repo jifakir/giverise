@@ -10,6 +10,11 @@ import { Descendant } from 'slate';
 
 const steps = ['describe', 'Next: Review Award', 'Next: Upload cover photo / set deadline', 'Next: Fund award', 5, 6];
 
+export type DocumentType = {
+    description: string
+    files: string[]
+};
+
 export type awardForm = {
     title: string
     description: Descendant[]
@@ -19,13 +24,14 @@ export type awardForm = {
     nationalities: []
     tags: []
     categories: string[]
-    documents: []
+    documents: DocumentType[]
     coverMedia: string
     screeningEssay: {}
     awardDistribution: {}
     award_amount: string
     tip_amount: string
     awardTotal: number
+    country: string
     deadline: string
     education: string
     school: string
@@ -73,10 +79,18 @@ const CreatePage = () => {
     const [title, setTitle] = useState<string>();
     const [state, setState] = useState<awardForm>({
         title: '',
-        description: [],
-        region: '',
+        description: [
+            {
+                type: 'paragraph',
+                children: [
+                    { text: '' },
+                ],
+            },
+        ],
+        region: 'us',
         criteria: {},
         states: [],
+        country: '',
         nationalities: [],
         tags: [],
         categories: [],
@@ -105,7 +119,13 @@ const CreatePage = () => {
     });
 
     const goNextStep = () => {
-        // if(currentStep === 0 && !state?.title) return;
+        
+        if(currentStep === 0 && state.description.length === 0) return;
+        if(currentStep === 1 && !state.region) return;
+        if(currentStep === 2 && state.categories.length === 0) return;
+        if(currentStep === 3 && !state.title) return;
+        if(currentStep === 4 && (!state.coverMedia || !state.deadline)) return;
+        if(currentStep === 5 && (!state.award_amount || !state.tip_amount)) return;
         if (currentStep < 5) {
             setCurrentStep(currentStep + 1);
         } else {
@@ -136,7 +156,7 @@ const CreatePage = () => {
         }
         fetchCategorires();
     },[]);
-    console.log("Form State: ",state);
+    
     return (
         <div className='flex'>
             <div className='bg-primary min-h-screen pt-[100px] xl:px-[60px] xl:w-[520px] lg:w-[400px] lg:px-10 mdMax:hidden'>
@@ -161,7 +181,7 @@ const CreatePage = () => {
             </div>
             <div className='min-h-screen bg-white lg:pt-[100px] flex flex-col xl:w-[calc(100%-520px)] lg:w-[calc(100%-400px)] mdMax:w-full'>
                 <div className="items-center smMax:justify-center smMax:bg-[#F8F9FC] px-10 border-b border-primary-stroke h-[100px] hidden mdMax:flex mb-10">
-                    <img src='/images/logo.png' className='max-w-full object-cover' />
+                    <img src='/images/logo.png' alt='image' className='max-w-full object-cover' />
                 </div>
                 <div className="flex items-start smMax:flex-col">
                     {currentStep > 0 && (
@@ -185,9 +205,9 @@ const CreatePage = () => {
                             <>
                                 <h3 className='text-[22px] font-bold text-primary leading-8 mb-2'>Describe your award</h3>
                                 <p className='text-secondary font-normal text-sm mb-7'>Understanding that self-worth is the beginning of success.</p>
-                                <RichTextEditor onChange={(v) => onChangeHandler('descripiton', v)} />
-                                <p className='w-full text-right text-secondary text-xs mt-2'>0/75</p>
-                                <h4 className='flex items-center text-sm font-medium text-primary mt-4 mb-6'>
+                                <RichTextEditor defaultValue={state?.description || null} onChange={(v) => onChangeHandler('description', v)} />
+                                {/* <p className='w-full text-right text-secondary text-xs mt-2'>0/75</p> */}
+                                <h4 className='flex items-center text-sm font-medium text-primary mt-6 mb-6'>
                                     <span className='mr-4'>
                                         <BiInfoCircle />
                                     </span>

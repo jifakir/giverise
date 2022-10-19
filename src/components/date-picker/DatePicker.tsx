@@ -12,7 +12,7 @@ const months = [
 ];
 // all the years from 2010 to 2030
 const years: number[] = [];
-for (let i = ((new Date()).getFullYear() - 10); i <= ((new Date()).getFullYear() + 10); i++) {
+for (let i = ((new Date()).getFullYear()); i <= ((new Date()).getFullYear() + 2); i++) {
     years.push(i);
 }
 

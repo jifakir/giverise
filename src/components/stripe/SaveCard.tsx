@@ -5,10 +5,25 @@ import { CreditCard } from '../icons';
 import CountrySelect from '../country-select/CountrySelect';
 import axios from 'axios';
 import { useAuth } from '../../hooks/useAuth';
+import api from '../../utils/api';
 
-const SaveCard = ({onClose}:{onClose?:() => void}) => {
 
-  const [country, setCountry] = useState('');
+type CardStateTypes = {
+  first_name: string,
+  last_name: string,
+  country: string,
+  post_code: string
+};
+
+const SaveCard = ({onClose}:{onClose:() => void}) => {
+
+  const [cardState, setCardState] = useState<CardStateTypes>({
+    first_name: '',
+    last_name: '',
+    country: '',
+    post_code: ''
+  });
+
   const { token, user } = useAuth();
 
   const stripe = useStripe();
@@ -70,26 +85,24 @@ const SaveCard = ({onClose}:{onClose?:() => void}) => {
       console.log(paymentMethod);
       
       try{
-        const { id, customer } = paymentMethod;
         console.log(user);
-        const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/payment-gateway/stripe/savecard`,{
-            customer,
-            payment_method: id,
+        const res = await api(`/payment-gateway/stripe/savecard`,{
+            payment_method: paymentMethod?.id,
             description: 'Save the card'
-          },
-          {
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            }
-          }
-          );
+          });
         console.log(res);
-        
+        onClose();
       }catch(err){
         console.log(err);
       }
     }
+  };
+
+  const handleOnChange = (name:string, val:any) => {
+    setCardState(prev => ({
+      ...prev,
+      [name]: val
+    }));
   };
 
   return (
@@ -106,13 +119,13 @@ const SaveCard = ({onClose}:{onClose?:() => void}) => {
                 <CardElement options={options} className="text-primary py-[18px]" />
             </div>
             <div className="flex items-center py-1">
-                <input placeholder='First name' name='first_name' className='h-11 w-[50%] focus:outline-none focus:ring-0 px-2 border-r border-[#F1F0FF]' />
-                <input placeholder='Last Name' name='last_name' className='h-11 w-[50%] focus:outline-none focus:ring-0 px-2' />
+                <input value={cardState?.first_name} onChange={(e) => handleOnChange(e.target.name, e.target.value)} placeholder='First name' name='first_name' className='h-11 w-[50%] focus:outline-none focus:ring-0 px-2 border-r border-[#F1F0FF]' />
+                <input value={cardState?.last_name} onChange={(e) => handleOnChange(e.target.name, e.target.value)} placeholder='Last Name' name='last_name' className='h-11 w-[50%] focus:outline-none focus:ring-0 px-2' />
             </div>
         </div>
         <div className="flex gap-4 mt-2">
             <div className="w-[50%]">
-                <CountrySelect value={country} label='Country' onChange={v => setCountry(v)} isFloatingLabel={true} />
+                <CountrySelect value={cardState?.country} label='Country' onChange={(v) => handleOnChange('country', v)} isFloatingLabel={true} />
             </div>
             <input placeholder='Postal Code' name='post_code' className='h-12 w-[50%] focus:outline-none focus:ring-0 px-2 border border-primary-stroke rounded-lg' />
         </div>
