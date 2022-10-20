@@ -86,10 +86,8 @@ const Payment = ({ state, onChangeHandler }: { state:awardForm, onChangeHandler:
                 console.log("Card error",err);
             }
         };
-        if(!setShowCardModal){
             fetchData();
-        }
-    },[setShowCardModal]);
+    },[]);
 
     const { award_amount, tip_amount } = state;
 

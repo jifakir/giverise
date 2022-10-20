@@ -8,7 +8,7 @@ import { FiArrowUpRight } from 'react-icons/fi';
 import TextInput from '../../auth-modal/TextInput';
 import { RichTextEditor } from '../../editor';
 import { CustomRadio } from '../../forms';
-import { Gallery, Edit, DeleteIcon } from '../../icons';
+import { Gallery, Edit, DeleteIcon, Copy, DotElipse, Invalid } from '../../icons';
 import { MultiSelectCheckBox } from '../multi-select-checkbox';
 import useBreakpoint from 'antd/lib/grid/hooks/useBreakpoint';
 import WhoCanApply from '../who-can-apply';
@@ -18,6 +18,16 @@ import { options } from '../../../dummy/data';
 import axios from 'axios';
 import { awardForm } from '../../../pages/awards/create';
 import dayjs from 'dayjs';
+import { MdDone } from 'react-icons/md';
+
+type PreviewProps = {
+    visible: boolean,
+    onClose: () => void,
+    state:awardForm,
+    onChangeHandler: (name:string, val:any) => void
+ };
+
+
 
 const CollapseHeader = ({ title = '', subtitle = '' }) => (
     <div className='px-6 smMax:px-0'>
@@ -48,14 +58,68 @@ const WhoCanApplyModal = ({ state, visible = false, onClose, onChangeHandler }: 
             </div>
         </Modal>
     )
-}
+};
 
- type PreviewProps = {
-    visible: boolean,
-    onClose: () => void,
-    state:awardForm,
-    onChangeHandler: (name:string, val:any) => void
- };
+const Success = ({visible = false}:{visible?: boolean}) => {
+    const breakpoint = useBreakpoint();
+    return (
+        <Drawer width={"100vw"} visible={visible} closable={false} bodyStyle={{ padding: '0px', backgroundColor: breakpoint.lg ? '#F3F3F3' : '#fff' }}>
+            <div className="flex bg-white items-center justify-between px-8 border-b border-primary-stroke h-[70px] smMax:border-0 smMax:h-[100px] smMax:bg-[#F8F9FC]">
+                <img src='/images/logo.png' className='max-w-full object-cover smMax:hidden' />
+                <img src='/images/logo-icon.png' className='max-w-full object-cover hidden smMax:block' />
+                <h3 className='text-[28px] font-bold text-[#1E1147] smMax:text-3xl smMax:font-semibold'>Success</h3>
+                <div className=""></div>
+            </div>
+            <div className='smMax:p-4 min-h-[calc(100vh-70px)] flex justify-center items-center font-outfit'>
+                <div className="">
+                    <div className="flex justify-center items-center">
+                        <div className="border-[4.5px] border-[#0FBD70] rounded-full text-6xl p-3">
+                            <MdDone className='text-[#0FBD70]' />
+                        </div>
+                    </div>
+                    <h3 className="mt-12 text-center text-xl font-outfit font-medium text-primary">Your award has been published successfully</h3>
+                    <p className='text-center font-outfit text-[#445169] mt-2'>Copy link to share with public</p>
+                    <div className="mt-10 cursor-pointer w-full p-4 bg-[#F8F8F8] flex justify-between items-center">
+                        <p className="text-[#1C1B4E]">Giverise.com/rnp/hdem-ckk</p>
+                        <Copy />
+                    </div>
+                    <div className='flex justify-center items-center'>
+                        <img src='/images/logos/Instagram_icon.png' alt='Insta Icon' className='w-8 h-8 object-cover mt-2' />
+                        <img src='/images/logos/whatsapp.png' alt='Whatsapp Icon' className='w-20 h-20 object-fit' />
+                        <img src='/images/logos/gmail.png' alt='Gmail Icon' className='w-9 h-9 object-cover mt-2' />
+                    </div>
+                </div>
+            </div>
+        </Drawer>
+    )
+};
+
+const Failure = ({visible = false}) => {
+
+    return (
+        <Modal visible={visible} closable={false} footer={null}>
+            <div className="font-outfit text-center py-10">
+                <div className="flex justify-center items-center mb-10">
+                    <div className="py-2">
+                        <Invalid />
+                    </div>
+                </div>
+                <h1 className='text-primary text-2xl font-medium'>We could not publish your award</h1>
+                <p className="text-secondary max-w-[360px] mx-auto mt-2 text-base">
+                    We were unable to publish your award and it has been saved to your drafts.
+                </p>
+                <div className="mt-10 flex justify-center items-center gap-5">
+                    <button className="bg-primary-purple text-white h-[52px] smMax:h-14 px-5 rounded-lg font-medium">
+                        Retry
+                    </button>
+                    <button className='border-2 border-primary-purple text-primary-purple h-[52px] font-medium smMax:h-14 px-4 rounded-lg'>
+                        View draft
+                    </button>
+                </div>
+            </div>
+        </Modal>
+    )
+};
 
 const PreviewWIndow = ({ visible = false, onClose, state, onChangeHandler }:PreviewProps) => {
     const breakpoint = useBreakpoint();
@@ -67,6 +131,9 @@ const PreviewWIndow = ({ visible = false, onClose, state, onChangeHandler }:Prev
     const [email, setEmail] = useState('');
     const [docFiles, setFiles] = useState<string[]>([]);
     const [docDescription, setDescription] = useState<string>('');
+    const [teams, setTeams] = useState<Array<any>>([]);
+    const [success, setSuccess] = useState(false);
+    const [failed, setFailed] = useState(false);
 
     const onSave = (f: File) => {
         setFile(f);
@@ -93,14 +160,18 @@ const PreviewWIndow = ({ visible = false, onClose, state, onChangeHandler }:Prev
         setFile(file);
     }
 
-    const addTeam = (val:string) => {
+    const addTeam = async (val:string) => {
         if(!email) return;
         try{
-            const res = api(`/invitations`,{
+            const postres = await api(`/invitations`,{
                 email,
                 roleId: val,
+                campaignId: state?.campaignId
             });
-            console.log(res);
+            console.log("Post: ",postres);
+            const fetchRes = await api('/invitations');
+            console.log("Fetch: ",fetchRes);
+            setTeams(fetchRes?.data);
         }catch(err){
             console.log(err);
         }
@@ -139,13 +210,14 @@ const PreviewWIndow = ({ visible = false, onClose, state, onChangeHandler }:Prev
     const handleSubmit = async (isDraft:boolean) => {
 
         const { 
-            education, school, study_field, gender, 
-            age_range, word_length, beneficiary,
-            winner, first_runner, second_runner } = state;
+            campaignId, education, school, study_field, gender, 
+            age_range, word_length, beneficiary, tip_amount, award_amount,
+            winner, first_runner, second_runner, essay_description, ...rest } = state;
 
         const formBody = {
-            ...state,
+            ...rest,
             isDraft,
+            awardTotal: eval(award_amount + tip_amount),
             criteria: {
                 education,
                 school,
@@ -154,7 +226,7 @@ const PreviewWIndow = ({ visible = false, onClose, state, onChangeHandler }:Prev
                 age_range
             },
             screeningEssay: {
-                description: '',
+                description: essay_description,
                 word_length
             },
             awardDistribution: {
@@ -166,20 +238,26 @@ const PreviewWIndow = ({ visible = false, onClose, state, onChangeHandler }:Prev
         };
 
         try{
-            const res = await api(`/campaigns`, formBody);
-            console.log(state);
+            console.log(formBody);
+            const res = await api(`/campaigns/${campaignId}`,'put', formBody);
             console.log(res);
+            setSuccess(true);
         }catch(err){
+            setFailed(true);
             console.log(err);
         }
         
     };
 
+    console.log(teams);
+
     return (
         <Drawer width={"100vw"} visible={visible} closable={false} bodyStyle={{ padding: '0px', backgroundColor: breakpoint.lg ? '#F3F3F3' : '#fff' }}>
+            <Success visible={success} />
+            <Failure visible={failed} />
             <div className="flex bg-white items-center justify-between px-8 border-b border-primary-stroke h-[70px] smMax:border-0 smMax:h-[100px] smMax:bg-[#F8F9FC]">
-                <img src='/images/logo.png' className='max-w-full object-cover smMax:hidden' />
-                <img src='/images/logo-icon.png' className='max-w-full object-cover hidden smMax:block' />
+                <img src='/images/logo.png' className='max-w-full object-cover smMax:hidden' alt='Image' />
+                <img src='/images/logo-icon.png' className='max-w-full object-cover hidden smMax:block' alt='Image' />
                 <h3 className='text-[28px] font-bold text-[#1E1147] smMax:text-3xl smMax:font-semibold'>Review award</h3>
                 <button className='flex items-center text-[#141518] font-medium text-sm' onClick={onClose}>
                     <span className='smMax:hidden'>Preview</span>
@@ -544,8 +622,8 @@ const PreviewWIndow = ({ visible = false, onClose, state, onChangeHandler }:Prev
                                 <div className="mb-4">
                                     <label className='text-sm font-medium text-primary'>Distribute fund by position</label>
                                     <div className="flex items-center gap-4 my-4">
-                                        <CustomRadio onChange={(v) => onChangeHandler('distribute', v)} label='Yes' value={'true'} name='distribute' />
-                                        <CustomRadio onChange={(v) => onChangeHandler('distribute', v)} label='No' value={'false'} name='distribute' />
+                                        <CustomRadio onChange={(v) => onChangeHandler('distribute', v.target.value)} label='Yes' value={'true'} name='distribute' />
+                                        <CustomRadio onChange={(v) => onChangeHandler('distribute', v.target.value)} label='No' value={'false'} name='distribute' />
                                     </div>
                                     <p className='text-xs text-body'>Total award will be distributed according to your  settings</p>
                                 </div>
@@ -574,7 +652,7 @@ const PreviewWIndow = ({ visible = false, onClose, state, onChangeHandler }:Prev
                                         </div>
                                         <div className='w-6/12 smMax:w-full'>
                                             <MultiSelectCheckBox
-                                                options={[{label: 'Admin', value: '0'},{label: 'Member', value: '1'}]}
+                                                options={[{label: 'Admin', value: '1'},{label: 'Member', value: '2'}]}
                                                 customOption={false}
                                                 mode='single'
                                                 hideSearch={true}
@@ -586,73 +664,32 @@ const PreviewWIndow = ({ visible = false, onClose, state, onChangeHandler }:Prev
                                     </div>
                                 </div>
                                 <div className='w-9/12 max-w-full mt-5 smMax:w-full'>
-                                    <div className="flex items-center justify-between border-b border-primary-stroke last-of-type:border-0 mb-4 pb-2">
-                                        <div className="flex items-center w-5/12 text-sm text-primary smMax:flex-col smMax:w-5/12 smMax:items-start">
-                                            <p>iamapj@yahoo.com</p>
-                                            <span className='inline-flex smMax:ml-0 smMax:mt-1 ml-2 bg-primary-orange bg-opacity-10 rounded-[4px] text-body px-2 py-1 capitalize'>
-                                                pending
-                                            </span>
-                                        </div>
-                                        <div className="w-2/12 smMax:w-4/12 mr-auto">
-                                            <MultiSelectCheckBox
-                                                options={['Admin', 'Member']}
-                                                customOption={false}
-                                                mode='single'
-                                                hideSearch={true}
-                                                placeholder='Select'
-                                                inputClass='border-0 focus:bg-white'
-                                                value={'Admin'}
-                                            />
-                                        </div>
-                                        <button className="text-body text-2xl text-right">
-                                            <DeleteIcon />
-                                        </button>
-                                    </div>
-                                    <div className="flex items-center justify-between border-b border-primary-stroke last-of-type:border-0 mb-4 pb-2">
-                                        <div className="flex items-center w-5/12 text-sm text-primary smMax:flex-col smMax:w-5/12 smMax:items-start">
-                                            <p>iamapj@yahoo.com</p>
-                                            <span className='inline-flex smMax:ml-0 smMax:mt-1 ml-2 bg-primary-orange bg-opacity-10 rounded-[4px] text-body px-2 py-1 capitalize'>
-                                                pending
-                                            </span>
-                                        </div>
-                                        <div className="w-2/12 smMax:w-4/12 mr-auto">
-                                            <MultiSelectCheckBox
-                                                options={['Admin', 'Member']}
-                                                customOption={false}
-                                                mode='single'
-                                                hideSearch={true}
-                                                placeholder='Select'
-                                                inputClass='border-0 focus:bg-white'
-                                                value={'Admin'}
-                                            />
-                                        </div>
-                                        <button className="text-body text-2xl text-right">
-                                            <DeleteIcon />
-                                        </button>
-                                    </div>
-                                    <div className="flex items-center justify-between border-b border-primary-stroke last-of-type:border-0 mb-4 pb-2">
-                                        <div className="flex items-center w-5/12 text-sm text-primary smMax:flex-col smMax:w-5/12 smMax:items-start">
-                                            <p>iamapj@yahoo.com</p>
-                                            <span className='inline-flex smMax:ml-0 smMax:mt-1 ml-2 bg-primary-orange bg-opacity-10 rounded-[4px] text-body px-2 py-1 capitalize'>
-                                                pending
-                                            </span>
-                                        </div>
-                                        <div className="w-2/12 smMax:w-4/12 mr-auto">
-                                            <MultiSelectCheckBox
-                                                options={[{label: 'Admin', value: '0'},{label: 'Member', value: '1'}]}
-                                                customOption={false}
-                                                mode='single'
-                                                hideSearch={true}
-                                                placeholder='Select'
-                                                inputClass='border-0 focus:bg-white'
-                                                value={'Admin'}
-                                            />
-                                        </div>
-                                        <button className="text-body text-2xl text-right">
-                                            <DeleteIcon />
-                                        </button>
-                                    </div>
-
+                                    {
+                                        teams.map((team, idx) => (
+                                            <div key={`team_${idx}`} className="flex items-center justify-between border-b border-primary-stroke last-of-type:border-0 mb-4 pb-2">
+                                                <div className="flex items-center w-5/12 text-sm text-primary smMax:flex-col smMax:w-5/12 smMax:items-start">
+                                                    <p>{team.email}</p>
+                                                    <span className='inline-flex smMax:ml-0 smMax:mt-1 ml-2 bg-primary-orange bg-opacity-10 rounded-[4px] text-body px-2 py-1 capitalize'>
+                                                        {team.status}
+                                                    </span>
+                                                </div>
+                                                <div className="w-2/12 smMax:w-4/12 mr-auto">
+                                                    <MultiSelectCheckBox
+                                                        options={[{label: 'Admin', value: '1'},{label: 'Member', value: '2'}]}
+                                                        customOption={false}
+                                                        mode='single'
+                                                        hideSearch={true}
+                                                        placeholder='Select'
+                                                        inputClass='border-0 focus:bg-white'
+                                                        value={team.roleId}
+                                                    />
+                                                </div>
+                                                <button className="text-body text-2xl text-right">
+                                                    <DeleteIcon />
+                                                </button>
+                                            </div>
+                                        ))
+                                    }
                                 </div>
                             </div>
                         </Collapse.Panel>

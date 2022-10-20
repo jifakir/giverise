@@ -21,3 +21,4 @@ export { default as PresentationIcon } from './Presentation';
 export { default as Stars } from './Stars';
 export { default as Lock } from './Lock';
 export { default as PaymentIcon } from './PaymentIcon';
+export { default as Invalid } from './Invalid';

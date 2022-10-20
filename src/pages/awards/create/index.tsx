@@ -16,6 +16,7 @@ export type DocumentType = {
 };
 
 export type awardForm = {
+    campaignId: number | null
     title: string
     description: Descendant[]
     region: string
@@ -33,20 +34,20 @@ export type awardForm = {
     awardTotal: number
     country: string
     deadline: string
-    education: string
-    school: string
-    gender: string
-    study_field: string
-    age_range: string
-    document_description: string
-    essay_description: Descendant[]
-    word_length: string
-    distributed: string
-    gpa: string
-    beneficiary: string
-    winner: string
-    first_runner: string
-    second_runner: string
+    education?: string
+    school?: string
+    gender?: string
+    study_field?: string
+    age_range?: string
+    document_description?: string
+    essay_description?: Descendant[]
+    word_length?: string
+    distributed?: string
+    gpa?: string
+    beneficiary?: string
+    winner?: string
+    first_runner?: string
+    second_runner?: string
 };
 
 const CustomStep = ({ steps = [], current = 0, className = '' }: { steps: string[], current: number, className: string }) => {
@@ -78,6 +79,7 @@ const CreatePage = () => {
     const [categories, setCategories] = useState([]);
     const [title, setTitle] = useState<string>();
     const [state, setState] = useState<awardForm>({
+        campaignId: null,
         title: '',
         description: [
             {
@@ -124,7 +126,34 @@ const CreatePage = () => {
         if(currentStep === 1 && !state.region) return;
         if(currentStep === 2 && state.categories.length === 0) return;
         if(currentStep === 3 && !state.title) return;
-        if(currentStep === 4 && (!state.coverMedia || !state.deadline)) return;
+        if(currentStep === 4){
+            if(!state.coverMedia || !state.deadline){
+                return
+            }else{
+                const { title, description, region, 
+                    states, nationalities, country, 
+                    coverMedia, deadline } = state;
+                const postData = async () => {
+                    try{
+                        const res = await api('/campaigns',{
+                            title,
+                            description,
+                            region,
+                            states,
+                            nationalities,
+                            country,
+                            coverMedia,
+                            deadline
+                        });
+                        console.log(res);
+                        setState(prev => ({...prev, campaignId: res?.data.id}))
+                    }catch(err){
+                        console.log(err);
+                    }
+                };
+                postData();
+            }
+        };
         if(currentStep === 5 && (!state.award_amount || !state.tip_amount)) return;
         if (currentStep < 5) {
             setCurrentStep(currentStep + 1);
