@@ -42,13 +42,20 @@ declare module 'slate' {
 }
 
 
-const RichTextEditor = ({ placeholder = 'Enter some rich text…' }) => {
+const RichTextEditor = ({ placeholder = 'Enter some rich text…', onChange, defaultValue }: 
+    {placeholder?: string, defaultValue?:Descendant[], onChange?: (v:Descendant[]) => void}
+    ) => {
     const renderElement = useCallback((props: any) => <Element {...props} />, [])
     const renderLeaf = useCallback((props: any) => <Leaf {...props} />, [])
     const [editor] = useState(() => withReact(createEditor()))
-
+        
     return (
-        <Slate editor={editor} value={initialValue}>
+        <Slate 
+            editor={editor} 
+            value={defaultValue ?? initialValue} 
+            onChange={(v) => onChange?.(v)}
+            
+             >
             <div className='flex items-center gap-4 flex-wrap mb-4 xs:gap-3'>
                 <MarkButton format="bold" span={<BsTypeBold />} />
                 <MarkButton format="italic" span={<GoItalic />} />
@@ -66,7 +73,7 @@ const RichTextEditor = ({ placeholder = 'Enter some rich text…' }) => {
                 <BlockButton format="justify" span={<FaAlignJustify />} />
             </div>
             <Editable
-                className='h-[170px] border border-primary-stroke rounded-lg p-4 w-full focus:border-primary-purple focus:bg-primary-purple focus:bg-opacity-5 text-body text-sm list-outside'
+                className='h-[170px] border overflow-x-hidden overflow-y-auto border-primary-stroke rounded-lg p-4 w-full focus:border-primary-purple focus:bg-primary-purple focus:bg-opacity-5 text-body text-sm list-outside'
                 renderElement={renderElement}
                 renderLeaf={renderLeaf}
                 placeholder={placeholder}

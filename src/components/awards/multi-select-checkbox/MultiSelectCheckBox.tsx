@@ -125,7 +125,7 @@ const MultiSelectCheckBox = (
     }: MultiSelectCheckBoxProps
 ) => {
     const [filteredOptions, setFilteredOptions] = useState<OptionType>(options);
-    const [selectedOptions, setSelectedOptions] = useState<string[] | string>(value);
+    const [selectedOptions, setSelectedOptions] = useState<string[] | string >(value);
     const [showDrowDown, setShowDropDown] = useState(false);
 
     const handleSelect = (value: string, checked: boolean) => {
@@ -168,6 +168,22 @@ const MultiSelectCheckBox = (
         }
     }
 
+    const showLabel = (value: string) => {
+        try {
+            if (typeof options[0] === "object") {
+                const opt = (options as []).find(
+                (item: Record<string, any>) => item.value === value
+                ) as any;
+                return opt?.label;
+            }
+            return value;
+        } catch (error) {
+            console.log("error: ", error);
+        }
+
+        return value;
+    };
+
 
     return (
         <div className={`w-full ${className}`}>
@@ -194,7 +210,7 @@ const MultiSelectCheckBox = (
                 <div className="flex items-center gap-4 flex-wrap mt-2">
                     {selectedOptions.map(option => (
                         <div key={option} className='inline-flex items-center bg-primary-purple bg-opacity-5 rounded-[3px] h-[30px] px-3 text-xs'>
-                            {option}
+                            {showLabel(option)}
                             <button className='ml-2' onClick={() => removeItem(option)}><FaTimes /></button>
                         </div>
                     ))}

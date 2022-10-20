@@ -27,6 +27,7 @@ export interface IUser {
   email: string;
   phone?: string;
   address?: string;
+  stripeCustomerId?: string;
   countryOfOrigin?: string;
   currentCityAndCountry?: string;
   socialLogin?: {
@@ -108,6 +109,8 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const updateUser = (user: IUser) => {
     setUser(user);
   };
+
+  console.log(token);
 
   const handleOAuthLogin = async (provider: string) => {
     if (provider) {

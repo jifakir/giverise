@@ -1,14 +1,54 @@
 import { Timeline } from 'antd';
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { BiInfoCircle } from 'react-icons/bi';
 import { RiCloseLine } from 'react-icons/ri';
 import { MdOutlineKeyboardBackspace } from 'react-icons/md';
 import { CustomTagInput, MultiSelectCheckBox, Payment, PreviewWIndow, RichTextEditor, TextInput, Upload, WhoCanApply } from '../../../components';
-import 'react-image-crop/dist/ReactCrop.css'
-import { categories } from '../../../dummy/data';
+import 'react-image-crop/dist/ReactCrop.css';
+import api from '../../../utils/api';
+import { Descendant } from 'slate';
 
 const steps = ['describe', 'Next: Review Award', 'Next: Upload cover photo / set deadline', 'Next: Fund award', 5, 6];
 
+export type DocumentType = {
+    description: string
+    files: string[]
+};
+
+export type awardForm = {
+    campaignId: number | null
+    title: string
+    description: Descendant[]
+    region: string
+    criteria: object
+    states: []
+    nationalities: []
+    tags: []
+    categories: string[]
+    documents: DocumentType[]
+    coverMedia: string
+    screeningEssay: {}
+    awardDistribution: {}
+    award_amount: string
+    tip_amount: string
+    awardTotal: number
+    country: string
+    deadline: string
+    education?: string
+    school?: string
+    gender?: string
+    study_field?: string
+    age_range?: string
+    document_description?: string
+    essay_description?: Descendant[]
+    word_length?: string
+    distributed?: string
+    gpa?: string
+    beneficiary?: string
+    winner?: string
+    first_runner?: string
+    second_runner?: string
+};
 
 const CustomStep = ({ steps = [], current = 0, className = '' }: { steps: string[], current: number, className: string }) => {
     return (
@@ -32,12 +72,89 @@ const CustomStep = ({ steps = [], current = 0, className = '' }: { steps: string
     )
 }
 
-
 const CreatePage = () => {
+
     const [currentStep, setCurrentStep] = useState(0);
     const [showPreviewDrawer, setShowPreviewDrawer] = useState(false);
+    const [categories, setCategories] = useState([]);
+    const [title, setTitle] = useState<string>();
+    const [state, setState] = useState<awardForm>({
+        campaignId: null,
+        title: '',
+        description: [
+            {
+                type: 'paragraph',
+                children: [
+                    { text: '' },
+                ],
+            },
+        ],
+        region: 'us',
+        criteria: {},
+        states: [],
+        country: '',
+        nationalities: [],
+        tags: [],
+        categories: [],
+        documents: [],
+        coverMedia: '',
+        screeningEssay: {},
+        awardDistribution: {},
+        award_amount: '',
+        tip_amount: '',
+        awardTotal: 0,
+        deadline: '',
+        education: '',
+        school: '',
+        gender: '',
+        study_field: '',
+        age_range: '',
+        document_description: '',
+        essay_description: [],
+        word_length: '',
+        gpa: '',
+        beneficiary: '',
+        distributed: '',
+        winner: '',
+        first_runner: '',
+        second_runner: '',
+    });
 
     const goNextStep = () => {
+        
+        if(currentStep === 0 && state.description.length === 0) return;
+        if(currentStep === 1 && !state.region) return;
+        if(currentStep === 2 && state.categories.length === 0) return;
+        if(currentStep === 3 && !state.title) return;
+        if(currentStep === 4){
+            if(!state.coverMedia || !state.deadline){
+                return
+            }else{
+                const { title, description, region, 
+                    states, nationalities, country, 
+                    coverMedia, deadline } = state;
+                const postData = async () => {
+                    try{
+                        const res = await api('/campaigns',{
+                            title,
+                            description,
+                            region,
+                            states,
+                            nationalities,
+                            country,
+                            coverMedia,
+                            deadline
+                        });
+                        console.log(res);
+                        setState(prev => ({...prev, campaignId: res?.data.id}))
+                    }catch(err){
+                        console.log(err);
+                    }
+                };
+                postData();
+            }
+        };
+        if(currentStep === 5 && (!state.award_amount || !state.tip_amount)) return;
         if (currentStep < 5) {
             setCurrentStep(currentStep + 1);
         } else {
@@ -51,6 +168,24 @@ const CreatePage = () => {
         }
     }
 
+    const onChangeHandler = (name:string,val:any) => {
+        setState(prevState => ({...prevState, [name]: val}));
+    };
+
+    const onTitleHandler = (v:string) => {
+        setTitle(v);
+        setState(prevState => ({...prevState, ['title']: v}));
+    };
+
+    useEffect(() => {
+        const fetchCategorires = async () => {
+            const res = await api(`/categories`);
+            console.log(res);
+            setCategories(res?.data?.map((cat:any) => ({ label: cat.title, value: cat.id.toString() })));
+        }
+        fetchCategorires();
+    },[]);
+    
     return (
         <div className='flex'>
             <div className='bg-primary min-h-screen pt-[100px] xl:px-[60px] xl:w-[520px] lg:w-[400px] lg:px-10 mdMax:hidden'>
@@ -75,7 +210,7 @@ const CreatePage = () => {
             </div>
             <div className='min-h-screen bg-white lg:pt-[100px] flex flex-col xl:w-[calc(100%-520px)] lg:w-[calc(100%-400px)] mdMax:w-full'>
                 <div className="items-center smMax:justify-center smMax:bg-[#F8F9FC] px-10 border-b border-primary-stroke h-[100px] hidden mdMax:flex mb-10">
-                    <img src='/images/logo.png' className='max-w-full object-cover' />
+                    <img src='/images/logo.png' alt='image' className='max-w-full object-cover' />
                 </div>
                 <div className="flex items-start smMax:flex-col">
                     {currentStep > 0 && (
@@ -99,9 +234,9 @@ const CreatePage = () => {
                             <>
                                 <h3 className='text-[22px] font-bold text-primary leading-8 mb-2'>Describe your award</h3>
                                 <p className='text-secondary font-normal text-sm mb-7'>Understanding that self-worth is the beginning of success.</p>
-                                <RichTextEditor />
-                                <p className='w-full text-right text-secondary text-xs mt-2'>0/75</p>
-                                <h4 className='flex items-center text-sm font-medium text-primary mt-4 mb-6'>
+                                <RichTextEditor defaultValue={state?.description || null} onChange={(v) => onChangeHandler('description', v)} />
+                                {/* <p className='w-full text-right text-secondary text-xs mt-2'>0/75</p> */}
+                                <h4 className='flex items-center text-sm font-medium text-primary mt-6 mb-6'>
                                     <span className='mr-4'>
                                         <BiInfoCircle />
                                     </span>
@@ -135,7 +270,7 @@ const CreatePage = () => {
                         )}
 
                         {currentStep === 1 && (
-                            <WhoCanApply />
+                            <WhoCanApply state={state} onChangeHandler={onChangeHandler} />
                         )}
 
                         {currentStep === 2 && (
@@ -145,10 +280,11 @@ const CreatePage = () => {
                                 <MultiSelectCheckBox
                                     hideSearch={true}
                                     customOption={true}
-                                    mode='single'
+                                    mode='multiple'
                                     placeholder='Select category'
                                     options={categories}
                                     className="mb-5"
+                                    onChange={v => onChangeHandler('categories', v)}
                                 />
                                 <CustomTagInput
                                     label={(
@@ -160,6 +296,7 @@ const CreatePage = () => {
                                             <p className='text-xs text-body'>Improve discoverability of your awards by adding tags relevant to the subject matter.</p>
                                         </div>
                                     )}
+                                    onChange={v => onChangeHandler('tags',v)}
                                 />
                                 <p className='text-xs text-body text-opacity-60 my-6'>These location preferences will be displayed to applicants and the puboic, but anyone can submit applications.</p>
                             </>
@@ -169,7 +306,12 @@ const CreatePage = () => {
                             <>
                                 <h3 className='text-[22px] font-bold text-primary leading-8 mb-2'>What best describes what you are awarding for?</h3>
                                 <p className='text-secondary font-normal text-sm mb-7'>This helps yourscholarship stand out to the right candidates.</p>
-                                <TextInput placeholder='Award for Nigerian Entrepreneurs living in the US |' className='focus:bg-primary-purple focus:bg-opacity-5' containerClass='mb-2' />
+                                <TextInput 
+                                    value={title} 
+                                    onChange={v => onTitleHandler(v)} 
+                                    placeholder='Enter award title' 
+                                    className='focus:bg-primary-purple focus:bg-opacity-5' 
+                                    containerClass='mb-2' />
                                 <p className="w-full text-right text-sm">0/75</p>
                                 <h4 className='flex items-center text-sm font-medium text-primary mt-4 mb-6'>
                                     <span className='mr-4'>
@@ -193,10 +335,11 @@ const CreatePage = () => {
                         )}
 
                         {currentStep === 4 && (
-                            <Upload />
+                            <Upload onChangeHandler={onChangeHandler} />
                         )}
+
                         {currentStep === 5 && (
-                            <Payment />
+                            <Payment state={state} onChangeHandler={onChangeHandler} />
                         )}
                     </div>
                 </div>
@@ -215,7 +358,6 @@ const CreatePage = () => {
                             </>
                         )}
                     </button>
-
                     <button onClick={goNextStep} className=' smMax:rounded-lg px-7 flex items-center  h-[56px] rounded-[4px] bg-primary-purple text-white text-base font-semibold justify-center'>
                         Continue
                     </button>
@@ -223,7 +365,9 @@ const CreatePage = () => {
             </div>
 
             <PreviewWIndow
+                state={state}
                 visible={showPreviewDrawer}
+                onChangeHandler={onChangeHandler}
                 onClose={() => setShowPreviewDrawer(false)} />
         </div>
     )

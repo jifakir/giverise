@@ -13,3 +13,4 @@ export { default as Payment } from './awards/payment/Payment';
 export { default as WhoCanApply } from './awards/who-can-apply';
 export { default as PreviewWIndow } from './awards/preview-window';
 export { default as ProfileSettingsLayout } from './layout/ProfileSettingsLayout';
+export { default as Stripe } from './stripe';

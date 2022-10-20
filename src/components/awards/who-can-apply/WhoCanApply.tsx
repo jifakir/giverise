@@ -1,10 +1,25 @@
 import React, { useState } from 'react'
-import { options, states } from '../../../dummy/data';
+import { options, allStates } from '../../../dummy/data';
+import { awardForm } from '../../../pages/awards/create';
 import { CustomTagInput } from '../custom-tag-input';
 import { MultiSelectCheckBox } from '../multi-select-checkbox';
 
-const WhoCanApply = ({ fromModal = false }) => {
+type WhoProps = {
+    fromModal?: boolean
+    onChangeHandler: (name: string, val: any) => void
+    state: awardForm
+};
+
+const WhoCanApply = ({ fromModal = false, state, onChangeHandler  }:WhoProps ) => {
+    
     const [selectedRegion, setSelectedRegion] = useState<'worldwide' | 'us' | 'local' | string>('');
+    const regionHandler = (v:string) => {
+        setSelectedRegion(v as string);
+        onChangeHandler('region', v);
+    };
+
+    const {region, states, nationalities, country, tags } = state;
+
     return (
         <>
             {fromModal ? (
@@ -23,9 +38,9 @@ const WhoCanApply = ({ fromModal = false }) => {
             )}
             <div className="grid gap-4 grid-cols-3 mb-4 smMax:grid-cols-1 smMax:hidden">
                 {options.map(option => (
-                    <button key={option.region} onClick={() => setSelectedRegion(option.region)} className={`p-6 rounded-lg ${selectedRegion === option.region ? 'bg-primary-purple' : 'bg-primary-purple bg-opacity-5 hover:bg-primary-purple'}  text-center group `}>
-                        <h3 className={`mb-6 text-base font-bold ${selectedRegion === option.region ? 'text-white' : 'group-hover:text-white text-primary'}`}>{option.title}</h3>
-                        <p className={`text-xs font-normal ${selectedRegion === option.region ? 'text-white' : 'group-hover:text-white text-primary'}`}>
+                    <button key={option.region} onClick={() => onChangeHandler('region',option.region)} className={`p-6 rounded-lg ${region === option.region ? 'bg-primary-purple' : 'bg-primary-purple bg-opacity-5 hover:bg-primary-purple'}  text-center group `}>
+                        <h3 className={`mb-6 text-base font-bold ${region === option.region ? 'text-white' : 'group-hover:text-white text-primary'}`}>{option.title}</h3>
+                        <p className={`text-xs font-normal ${region === option.region ? 'text-white' : 'group-hover:text-white text-primary'}`}>
                             {option.description}
                         </p>
                     </button>
@@ -48,16 +63,16 @@ const WhoCanApply = ({ fromModal = false }) => {
                             value: 'local',
                         },
                     ]}
-                    value='worldwide'
+                    value={selectedRegion}
                     customOption={false}
                     mode='single'
                     hideSearch={true}
                     placeholder='Select'
                     // inputClass='border-0 focus:bg-white'
-                    onChange={v => setSelectedRegion(v as string)}
+                    onChange={v => regionHandler(v as string)}
                 />
             </div>
-            {selectedRegion === 'us' ? (
+            {region === 'us' ? (
                 <>
                     <MultiSelectCheckBox
                         label={(
@@ -67,7 +82,8 @@ const WhoCanApply = ({ fromModal = false }) => {
                             </label>
                         )}
                         placeholder='Add states'
-                        options={states}
+                        options={allStates}
+                        onChange={(v) => onChangeHandler('states', v)}
                         className="mb-5"
                     />
 
@@ -79,13 +95,14 @@ const WhoCanApply = ({ fromModal = false }) => {
                             </label>
                         )}
                         placeholder='Add nationalities'
-                        options={states}
+                        options={allStates}
+                        onChange={(v) => onChangeHandler("nationalities",v)}
                         className="mb-5"
                     />
                 </>
             ) : null}
 
-            {selectedRegion === 'local' ? (
+            {region === 'local' ? (
                 <>
                     <MultiSelectCheckBox
                         label={(
@@ -95,7 +112,8 @@ const WhoCanApply = ({ fromModal = false }) => {
                             </label>
                         )}
                         placeholder='Add country'
-                        options={states}
+                        options={allStates}
+                        onChange={(v) => onChangeHandler('country', v)}
                         className="mb-5"
                     />
 
@@ -107,7 +125,8 @@ const WhoCanApply = ({ fromModal = false }) => {
                             </label>
                         )}
                         placeholder='Add nationalities'
-                        options={states}
+                        options={allStates}
+                        onChange={(v) => onChangeHandler('nationalities', v)}
                         className="mb-5"
                     />
 
@@ -121,6 +140,7 @@ const WhoCanApply = ({ fromModal = false }) => {
                                 <p className='text-xs text-body'>Improve discoverability of your awards by adding tags relevant to the subject matter.</p>
                             </div>
                         )}
+                        onChange={(v) => onChangeHandler('tags', v)}
                     />
                 </>
             ) : null}

@@ -1,5 +1,5 @@
 import { Drawer, Collapse, Modal } from 'antd';
-import React, { useRef, useState } from 'react'
+import React, { ChangeEvent, useRef, useState } from 'react'
 import { AiOutlineCloud } from 'react-icons/ai';
 import { BiInfoCircle } from 'react-icons/bi';
 import { BsX, BsPlusCircle, BsCheckCircle, BsArrowLeftShort } from 'react-icons/bs';
@@ -8,11 +8,26 @@ import { FiArrowUpRight } from 'react-icons/fi';
 import TextInput from '../../auth-modal/TextInput';
 import { RichTextEditor } from '../../editor';
 import { CustomRadio } from '../../forms';
-import { Gallery, Edit, DeleteIcon } from '../../icons';
+import { Gallery, Edit, DeleteIcon, Copy, DotElipse, Invalid } from '../../icons';
 import { MultiSelectCheckBox } from '../multi-select-checkbox';
 import useBreakpoint from 'antd/lib/grid/hooks/useBreakpoint';
 import WhoCanApply from '../who-can-apply';
 import { CropModal } from '../upload/UploadBox';
+import api from '../../../utils/api';
+import { options } from '../../../dummy/data';
+import axios from 'axios';
+import { awardForm } from '../../../pages/awards/create';
+import dayjs from 'dayjs';
+import { MdDone } from 'react-icons/md';
+
+type PreviewProps = {
+    visible: boolean,
+    onClose: () => void,
+    state:awardForm,
+    onChangeHandler: (name:string, val:any) => void
+ };
+
+
 
 const CollapseHeader = ({ title = '', subtitle = '' }) => (
     <div className='px-6 smMax:px-0'>
@@ -26,7 +41,7 @@ const CollapseHeader = ({ title = '', subtitle = '' }) => (
     </div>
 );
 
-const WhoCanApplyModal = ({ visible = false, onClose }: { visible?: boolean; onClose: () => void }) => {
+const WhoCanApplyModal = ({ state, visible = false, onClose, onChangeHandler }: { state:awardForm, visible?: boolean; onClose: () => void, onChangeHandler: (name:string, val:any) => void}) => {
     return (
         <Modal visible={visible} closable={false} footer={null}>
             <div className="flex items-center">
@@ -35,7 +50,7 @@ const WhoCanApplyModal = ({ visible = false, onClose }: { visible?: boolean; onC
                 </button>
                 <h3 className='mx-auto text-lg font-bold text-primary'>Who can apply</h3>
             </div>
-            <WhoCanApply fromModal={true} />
+            <WhoCanApply state={state} onChangeHandler={onChangeHandler} fromModal={true} />
             <div className="flex items-center justify-end mt-6">
                 <button className='bg-primary-purple text-white font-medium text-base rounded-[4px] grid place-items-center h-12 w-[71px]'>
                     Done
@@ -43,16 +58,82 @@ const WhoCanApplyModal = ({ visible = false, onClose }: { visible?: boolean; onC
             </div>
         </Modal>
     )
-}
+};
 
-const PreviewWIndow = ({ visible = false, onClose }: { visible?: boolean, onClose: () => void }) => {
+const Success = ({visible = false}:{visible?: boolean}) => {
+    const breakpoint = useBreakpoint();
+    return (
+        <Drawer width={"100vw"} visible={visible} closable={false} bodyStyle={{ padding: '0px', backgroundColor: breakpoint.lg ? '#F3F3F3' : '#fff' }}>
+            <div className="flex bg-white items-center justify-between px-8 border-b border-primary-stroke h-[70px] smMax:border-0 smMax:h-[100px] smMax:bg-[#F8F9FC]">
+                <img src='/images/logo.png' className='max-w-full object-cover smMax:hidden' />
+                <img src='/images/logo-icon.png' className='max-w-full object-cover hidden smMax:block' />
+                <h3 className='text-[28px] font-bold text-[#1E1147] smMax:text-3xl smMax:font-semibold'>Success</h3>
+                <div className=""></div>
+            </div>
+            <div className='smMax:p-4 min-h-[calc(100vh-70px)] flex justify-center items-center font-outfit'>
+                <div className="">
+                    <div className="flex justify-center items-center">
+                        <div className="border-[4.5px] border-[#0FBD70] rounded-full text-6xl p-3">
+                            <MdDone className='text-[#0FBD70]' />
+                        </div>
+                    </div>
+                    <h3 className="mt-12 text-center text-xl font-outfit font-medium text-primary">Your award has been published successfully</h3>
+                    <p className='text-center font-outfit text-[#445169] mt-2'>Copy link to share with public</p>
+                    <div className="mt-10 cursor-pointer w-full p-4 bg-[#F8F8F8] flex justify-between items-center">
+                        <p className="text-[#1C1B4E]">Giverise.com/rnp/hdem-ckk</p>
+                        <Copy />
+                    </div>
+                    <div className='flex justify-center items-center'>
+                        <img src='/images/logos/Instagram_icon.png' alt='Insta Icon' className='w-8 h-8 object-cover mt-2' />
+                        <img src='/images/logos/whatsapp.png' alt='Whatsapp Icon' className='w-20 h-20 object-fit' />
+                        <img src='/images/logos/gmail.png' alt='Gmail Icon' className='w-9 h-9 object-cover mt-2' />
+                    </div>
+                </div>
+            </div>
+        </Drawer>
+    )
+};
+
+const Failure = ({visible = false}) => {
+
+    return (
+        <Modal visible={visible} closable={false} footer={null}>
+            <div className="font-outfit text-center py-10">
+                <div className="flex justify-center items-center mb-10">
+                    <div className="py-2">
+                        <Invalid />
+                    </div>
+                </div>
+                <h1 className='text-primary text-2xl font-medium'>We could not publish your award</h1>
+                <p className="text-secondary max-w-[360px] mx-auto mt-2 text-base">
+                    We were unable to publish your award and it has been saved to your drafts.
+                </p>
+                <div className="mt-10 flex justify-center items-center gap-5">
+                    <button className="bg-primary-purple text-white h-[52px] smMax:h-14 px-5 rounded-lg font-medium">
+                        Retry
+                    </button>
+                    <button className='border-2 border-primary-purple text-primary-purple h-[52px] font-medium smMax:h-14 px-4 rounded-lg'>
+                        View draft
+                    </button>
+                </div>
+            </div>
+        </Modal>
+    )
+};
+
+const PreviewWIndow = ({ visible = false, onClose, state, onChangeHandler }:PreviewProps) => {
     const breakpoint = useBreakpoint();
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [visbleWhoCanApply, setVisibleWhoCanApply] = useState(false);
     const [visibleCropModal, setVisibleCropModal] = useState(false);
     const [file, setFile] = useState<File>();
-    const [imgSrc, setImgSrc] = useState<string>();
-
+    const [imgSrc, setImgSrc] = useState<string>(state?.coverMedia);
+    const [email, setEmail] = useState('');
+    const [docFiles, setFiles] = useState<string[]>([]);
+    const [docDescription, setDescription] = useState<string>('');
+    const [teams, setTeams] = useState<Array<any>>([]);
+    const [success, setSuccess] = useState(false);
+    const [failed, setFailed] = useState(false);
 
     const onSave = (f: File) => {
         setFile(f);
@@ -79,12 +160,104 @@ const PreviewWIndow = ({ visible = false, onClose }: { visible?: boolean, onClos
         setFile(file);
     }
 
-    return (
+    const addTeam = async (val:string) => {
+        if(!email) return;
+        try{
+            const postres = await api(`/invitations`,{
+                email,
+                roleId: val,
+                campaignId: state?.campaignId
+            });
+            console.log("Post: ",postres);
+            const fetchRes = await api('/invitations');
+            console.log("Fetch: ",fetchRes);
+            setTeams(fetchRes?.data);
+        }catch(err){
+            console.log(err);
+        }
+    };
 
+    const addDocument = () => {
+
+        if(!docDescription) return;
+        if(docFiles.length === 0) return;
+        onChangeHandler('documents',[...state.documents,{
+            description: docDescription,
+            files: docFiles
+        }]);
+        setDescription('');
+        setFiles([]);
+    };
+
+    const removeDocument = (idx:number) => {
+        let documents = [...state.documents];
+        documents.splice(idx,1);
+        onChangeHandler('documents', documents);
+    };
+
+    const fileChangeHandler = (e:ChangeEvent<HTMLInputElement>) => {
+        console.log(`${e.target.value}: `, e.target.checked);
+        const checked = e.target.checked;
+        const value = e.target.value;
+        if(checked){
+            setFiles([...docFiles, value]);
+        }else{
+            setFiles([...docFiles.filter( itm => itm !== value)]);
+        }
+        console.log(docFiles);
+    };
+
+    const handleSubmit = async (isDraft:boolean) => {
+
+        const { 
+            campaignId, education, school, study_field, gender, 
+            age_range, word_length, beneficiary, tip_amount, award_amount,
+            winner, first_runner, second_runner, essay_description, ...rest } = state;
+
+        const formBody = {
+            ...rest,
+            isDraft,
+            awardTotal: eval(award_amount + tip_amount),
+            criteria: {
+                education,
+                school,
+                study_field,
+                gender,
+                age_range
+            },
+            screeningEssay: {
+                description: essay_description,
+                word_length
+            },
+            awardDistribution: {
+                beneficiary,
+                winner,
+                first_runner,
+                second_runner
+            }
+        };
+
+        try{
+            console.log(formBody);
+            const res = await api(`/campaigns/${campaignId}`,'put', formBody);
+            console.log(res);
+            setSuccess(true);
+        }catch(err){
+            setFailed(true);
+            console.log(err);
+        }
+        
+    };
+
+    console.log(teams);
+
+    return (
         <Drawer width={"100vw"} visible={visible} closable={false} bodyStyle={{ padding: '0px', backgroundColor: breakpoint.lg ? '#F3F3F3' : '#fff' }}>
+            <Success visible={success} />
+            <Failure visible={failed} />
             <div className="flex bg-white items-center justify-between px-8 border-b border-primary-stroke h-[70px] smMax:border-0 smMax:h-[100px] smMax:bg-[#F8F9FC]">
-                <img src='/images/logo.png' className='max-w-full object-cover smMax:hidden' />
-                <img src='/images/logo-icon.png' className='max-w-full object-cover hidden smMax:block' />
+                <img src='/images/logo.png' className='max-w-full object-cover smMax:hidden' alt='Image' />
+                <img src='/images/logo-icon.png' className='max-w-full object-cover hidden smMax:block' alt='Image' />
                 <h3 className='text-[28px] font-bold text-[#1E1147] smMax:text-3xl smMax:font-semibold'>Review award</h3>
                 <button className='flex items-center text-[#141518] font-medium text-sm' onClick={onClose}>
                     <span className='smMax:hidden'>Preview</span>
@@ -107,7 +280,14 @@ const PreviewWIndow = ({ visible = false, onClose }: { visible?: boolean, onClos
                             </div>
                         </div>
                         <div className='relative w-[60%] smMax:w-full'>
-                            <TextInput floatingLabel={true} label='Award title' className='pt-6 px-3.5 overflow-hidden placeholder-shown:text-ellipsis placeholder:text-ellipsis placeholder:whitespace-nowrap' placeholder="Award for Nigerian..." />
+                            <TextInput 
+                                value={state?.title} 
+                                onChange={(v) => onChangeHandler('title', v)} 
+                                floatingLabel={true} 
+                                label='Award title'
+                                placeholder="Enter award title"
+                                className='pt-6 px-3.5 overflow-hidden placeholder-shown:text-ellipsis placeholder:text-ellipsis placeholder:whitespace-nowrap' 
+                                />
                             <span className='absolute w-5 h-5 bg-primary-purple bg-opacity-5 text-secondary text-xs rounded-full right-4 top-4 smMax:right-3 grid place-items-center'>
                                 5
                             </span>
@@ -126,7 +306,7 @@ const PreviewWIndow = ({ visible = false, onClose }: { visible?: boolean, onClos
                             </button>
                         </div>
                         <div className='w-[60%] smMax:w-full'>
-                            <img src={imgSrc ? imgSrc : "/images/dummy/preview.jpg"} className="object-cover w-full h-[202px] rounded-lg" />
+                            <img src={imgSrc ? imgSrc : "/images/dummy/preview.jpg"} alt="img" className="object-cover w-full h-[202px] rounded-lg" />
                         </div>
                     </div>
                     <div className="px-10 flex smMax:flex-col smMax:px-4 py-4 border-b border-primary-stroke">
@@ -140,7 +320,9 @@ const PreviewWIndow = ({ visible = false, onClose }: { visible?: boolean, onClos
                             </div>
                         </div>
                         <div className='w-[60%] smMax:w-full'>
-                            <RichTextEditor />
+                            <RichTextEditor 
+                                defaultValue={state?.description}
+                                onChange={(v) => onChangeHandler('description',v)} />
                         </div>
                     </div>
                     <div className="px-10  smMax:px-4 py-4 border-b border-primary-stroke">
@@ -151,24 +333,16 @@ const PreviewWIndow = ({ visible = false, onClose }: { visible?: boolean, onClos
                                 <button onClick={() => setVisibleWhoCanApply(true)}><Edit /></button>
                             </div>
                             <div className="flex items-center gap-2 flex-wrap mt-2">
-                                <div className='flex items-center gap-[3px] rounded-[3px] bg-primary-purple bg-opacity-5 border border-[#EAE9F2] text-primary text-xs px-3 py-1'>
-                                    Nigerians
-                                    <button className='text-sm'>
-                                        <BsX />
-                                    </button>
-                                </div>
-                                <div className='flex items-center gap-[3px] rounded-[3px] bg-primary-purple bg-opacity-5 border border-[#EAE9F2] text-primary text-xs px-3 py-1'>
-                                    Ethiopian
-                                    <button className='text-sm'>
-                                        <BsX />
-                                    </button>
-                                </div>
-                                <div className='flex items-center gap-[3px] rounded-[3px] bg-primary-purple bg-opacity-5 border border-[#EAE9F2] text-primary text-xs px-3 py-1'>
-                                    Indian
-                                    <button className='text-sm'>
-                                        <BsX />
-                                    </button>
-                                </div>
+                                {
+                                    state?.nationalities?.map((v:string, idx:number) => (
+                                        <div key={idx} className='flex items-center gap-[3px] rounded-[3px] bg-primary-purple bg-opacity-5 border border-[#EAE9F2] text-primary text-xs px-3 py-1'>
+                                            {v}
+                                            <button className='text-sm'>
+                                                <BsX />
+                                            </button>
+                                        </div>
+                                    ))
+                                }
                             </div>
                         </div>
                         <div className="mb-8">
@@ -178,37 +352,29 @@ const PreviewWIndow = ({ visible = false, onClose }: { visible?: boolean, onClos
                                 <span><Edit /></span>
                             </div>
                             <div className="flex items-center gap-2 flex-wrap mt-2">
-                                <div className='flex items-center gap-[3px] rounded-[3px] bg-primary-purple bg-opacity-10 border border-[#EAE9F2] text-primary text-xs px-3 py-1'>
-                                    WAEC
-                                    <button className='text-sm'>
-                                        <BsX />
-                                    </button>
-                                </div>
-                                <div className='flex items-center gap-[3px] rounded-[3px] bg-primary-purple bg-opacity-10 border border-[#EAE9F2] text-primary text-xs px-3 py-1'>
-                                    STEM
-                                    <button className='text-sm'>
-                                        <BsX />
-                                    </button>
-                                </div>
-                                <div className='flex items-center gap-[3px] rounded-[3px] bg-primary-purple bg-opacity-10 border border-[#EAE9F2] text-primary text-xs px-3 py-1'>
-                                    NGO
-                                    <button className='text-sm'>
-                                        <BsX />
-                                    </button>
-                                </div>
+                                {
+                                    state?.categories.map((cat:string, idx:number) => (
+                                        <div key={`category_${idx}`} className='flex items-center gap-[3px] rounded-[3px] bg-primary-purple bg-opacity-10 border border-[#EAE9F2] text-primary text-xs px-3 py-1'>
+                                            {cat}
+                                            <button className='text-sm'>
+                                                <BsX />
+                                            </button>
+                                        </div>
+                                    ))
+                                }
                             </div>
                         </div>
                         <div className="mb-8">
                             <h3 className='text-lg font-medium text-[#1E1147]'>Application deadline</h3>
                             <div className="flex items-center text-xs text-body gap-2">
-                                <span>December 11, 2022</span>
+                                <span>{dayjs(state?.deadline).format('DD-MM-YYYY')}</span>
                                 <span><Edit /></span>
                             </div>
                         </div>
                         <div className="">
                             <h3 className='text-lg font-medium text-[#1E1147]'>Award total</h3>
                             <div className="flex items-center text-xs text-body gap-2">
-                                <span>$5,000</span>
+                                <span>${state?.award_amount + state?.tip_amount}</span>
                                 <span><Edit /></span>
                             </div>
                         </div>
@@ -223,15 +389,26 @@ const PreviewWIndow = ({ visible = false, onClose }: { visible?: boolean, onClos
                                             mode='single'
                                             hideSearch={true}
                                             placeholder='Select'
+                                            options={[
+                                                {
+                                                    label: 'Education',
+                                                    value: 'education'
+                                                },
+                                                {
+                                                    label: 'Education 2',
+                                                    value: 'education2'
+                                                },
+                                            ]}
+                                            onChange={v => onChangeHandler('education', v)}
                                             label={<label className='text-sm text-primary font-medium mb-2 block'>Education level</label>}
                                         />
                                     </div>
                                     <div>
                                         <label className='text-sm text-primary font-medium mb-6 block'>Gender</label>
                                         <div className="flex items-center gap-4">
-                                            <CustomRadio label='Both' name='gender' value='both' size='lg' />
-                                            <CustomRadio label='Male' name='gender' value='male' size='lg' />
-                                            <CustomRadio label='Female' name='gender' value='female' size='lg' />
+                                            <CustomRadio label='Both' onChange={v => onChangeHandler('gender', v.target.value)} name='gender' value='both' size='lg' />
+                                            <CustomRadio label='Male' onChange={v => onChangeHandler('gender', v.target.value)} name='gender' value='male' size='lg' />
+                                            <CustomRadio label='Female' onChange={v => onChangeHandler('gender', v.target.value)} name='gender' value='female' size='lg' />
                                         </div>
                                     </div>
                                     <div>
@@ -240,6 +417,17 @@ const PreviewWIndow = ({ visible = false, onClose }: { visible?: boolean, onClos
                                             mode='single'
                                             hideSearch={true}
                                             placeholder='Select'
+                                            options={[
+                                                {
+                                                    label: 'School',
+                                                    value: 'school'
+                                                },
+                                                {
+                                                    label: 'School 2',
+                                                    value: 'school2'
+                                                },
+                                            ]}
+                                            onChange={v => onChangeHandler('school', v)}
                                             label={<label className='text-sm text-primary font-medium mb-2 block'>School(s)</label>}
                                         />
                                     </div>
@@ -249,6 +437,17 @@ const PreviewWIndow = ({ visible = false, onClose }: { visible?: boolean, onClos
                                             mode='single'
                                             hideSearch={true}
                                             placeholder='Select'
+                                            onChange={v => onChangeHandler('study_field', v)}
+                                            options={[
+                                                {
+                                                    label: 'Study',
+                                                    value: 'study'
+                                                },
+                                                {
+                                                    label: 'Study 2',
+                                                    value: 'study2'
+                                                },
+                                            ]}
                                             label={<label className='text-sm text-primary font-medium mb-2 block'>Field of study</label>}
                                         />
                                     </div>
@@ -258,6 +457,11 @@ const PreviewWIndow = ({ visible = false, onClose }: { visible?: boolean, onClos
                                             mode='single'
                                             hideSearch={true}
                                             placeholder='Select'
+                                            onChange={v => onChangeHandler('age_range', v)}
+                                            options={[
+                                                {label: '50', value: '50'},
+                                                {label: '60', value: '60'},
+                                            ]}
                                             label={<label className='text-sm text-primary font-medium mb-2 block'>Age range</label>}
                                         />
                                     </div>
@@ -267,30 +471,30 @@ const PreviewWIndow = ({ visible = false, onClose }: { visible?: boolean, onClos
                         <Collapse.Panel key={'2'} header={<CollapseHeader title='Documents' subtitle='Would you like your scholarship applicants to submit any media files or documents (video, image, audio, word, PDF)' />}>
                             <div className="px-6 smMax:px-0">
                                 <div className='xl:max-w-[80%]'>
-                                    <TextInput placeholder='File description or name (e.g. 2022 GRE Result Transcript)' />
+                                    <TextInput value={docDescription} onChange={v => setDescription(v)} placeholder='File description or name (e.g. 2022 GRE Result Transcript)' />
                                     <div className="border rounded-lg border-primary-stroke grid grid-cols-3 smMax:grid-cols-2 gap-4 p-4 mb-4">
                                         <label className='flex items-center cursor-pointer'>
-                                            <input type="checkbox" className='w-[22px] h-[22px] rounded-[4px] border-2 border-body checked:border-primary-purple text-primary-purple focus:ring-0 focus:ring-offset-0' />
+                                            <input onChange={(e) => fileChangeHandler(e)} value={'word'} type="checkbox" className='w-[22px] h-[22px] rounded-[4px] border-2 border-body checked:border-primary-purple text-primary-purple focus:ring-0 focus:ring-offset-0' />
                                             <span className='text-body text-sm font-normal ml-2'>Word document</span>
                                         </label>
                                         <label className='flex items-center cursor-pointer'>
-                                            <input type="checkbox" className='w-[22px] h-[22px] rounded-[4px] border-2 border-body checked:border-primary-purple text-primary-purple focus:ring-0 focus:ring-offset-0' />
+                                            <input onChange={(e) => fileChangeHandler(e)} value={'image'} type="checkbox" className='w-[22px] h-[22px] rounded-[4px] border-2 border-body checked:border-primary-purple text-primary-purple focus:ring-0 focus:ring-offset-0' />
                                             <span className='text-body text-sm font-normal ml-2'>Image</span>
                                         </label>
                                         <label className='flex items-center cursor-pointer'>
-                                            <input type="checkbox" className='w-[22px] h-[22px] rounded-[4px] border-2 border-body checked:border-primary-purple text-primary-purple focus:ring-0 focus:ring-offset-0' />
+                                            <input onChange={(e) => fileChangeHandler(e)} value={'presentation'} type="checkbox" className='w-[22px] h-[22px] rounded-[4px] border-2 border-body checked:border-primary-purple text-primary-purple focus:ring-0 focus:ring-offset-0' />
                                             <span className='text-body text-sm font-normal ml-2'>Presentation</span>
                                         </label>
                                         <label className='flex items-center cursor-pointer'>
-                                            <input type="checkbox" className='w-[22px] h-[22px] rounded-[4px] border-2 border-body checked:border-primary-purple text-primary-purple focus:ring-0 focus:ring-offset-0' />
+                                            <input onChange={(e) => fileChangeHandler(e)} value={'pdf'} type="checkbox" className='w-[22px] h-[22px] rounded-[4px] border-2 border-body checked:border-primary-purple text-primary-purple focus:ring-0 focus:ring-offset-0' />
                                             <span className='text-body text-sm font-normal ml-2'>PDF</span>
                                         </label>
                                         <label className='flex items-center cursor-pointer'>
-                                            <input type="checkbox" className='w-[22px] h-[22px] rounded-[4px] border-2 border-body checked:border-primary-purple text-primary-purple focus:ring-0 focus:ring-offset-0' />
+                                            <input onChange={(e) => fileChangeHandler(e)} value={'video'} type="checkbox" className='w-[22px] h-[22px] rounded-[4px] border-2 border-body checked:border-primary-purple text-primary-purple focus:ring-0 focus:ring-offset-0' />
                                             <span className='text-body text-sm font-normal ml-2'>Video</span>
                                         </label>
                                         <label className='flex items-center cursor-pointer'>
-                                            <input type="checkbox" className='w-[22px] h-[22px] rounded-[4px] border-2 border-body checked:border-primary-purple text-primary-purple focus:ring-0 focus:ring-offset-0' />
+                                            <input onChange={(e) => fileChangeHandler(e)} value={'spreadsheet'} type="checkbox" className='w-[22px] h-[22px] rounded-[4px] border-2 border-body checked:border-primary-purple text-primary-purple focus:ring-0 focus:ring-offset-0' />
                                             <span className='text-body text-sm font-normal ml-2'>Spreadsheet</span>
                                         </label>
                                     </div>
@@ -298,24 +502,21 @@ const PreviewWIndow = ({ visible = false, onClose }: { visible?: boolean, onClos
                                         <p>Maximum video length</p>
                                         <p>10s</p>
                                     </div>
-                                    <button className='flex items-center h-10 w-[90px] mb-6 justify-center bg-primary-purple bg-opacity-10 rounded-[4px] font-medium text-primary'>
+                                    <button onClick={addDocument} className='flex items-center h-10 w-[90px] mb-6 justify-center bg-primary-purple bg-opacity-10 rounded-[4px] font-medium text-primary'>
                                         <span className='mr-2'><FaPlus /></span>
                                         Add
                                     </button>
-                                    <div className='flex items-center mb-3 text-body text-sm font-normal'>
-                                        <div className='w-2 h-2 rounded-full bg-primary mr-2' />
-                                        Video recording of you (pdf, audio, word)
-                                        <button className="text-body text-2xl ml-auto">
-                                            <DeleteIcon />
-                                        </button>
-                                    </div>
-                                    <div className='flex items-center mb-3 text-body text-sm font-normal'>
-                                        <div className='w-2 h-2 rounded-full bg-primary mr-2' />
-                                        WAEC result (Image, PDF)
-                                        <button className="text-body text-2xl ml-auto">
-                                            <DeleteIcon />
-                                        </button>
-                                    </div>
+                                    {
+                                        state?.documents.map((doc, idx) => (
+                                        <div key={`document_${idx}`} className='flex items-center mb-3 text-body text-sm font-normal'>
+                                            <div className='w-2 h-2 rounded-full bg-primary mr-2'/>
+                                                {doc.description} ({doc.files.join(', ')})
+                                            <button onClick={() => removeDocument(idx)} className="text-body text-2xl ml-auto">
+                                                <DeleteIcon />
+                                            </button>
+                                        </div>
+                                        ))
+                                    }
                                 </div>
                             </div>
                         </Collapse.Panel>
@@ -323,9 +524,9 @@ const PreviewWIndow = ({ visible = false, onClose }: { visible?: boolean, onClos
                             <div className="px-6 smMax:px-0">
                                 <div className="grid grid-cols-3 smMax:grid-cols-1 gap-6">
                                     <div className="col-span-2 smMax:col-span-full">
-                                        <RichTextEditor placeholder='Essay desciption' />
+                                        <RichTextEditor onChange={(v) => onChangeHandler('screeningEssay', v)} placeholder='Essay desciption' />
                                         <div className="relative mt-4">
-                                            <TextInput label='Essay length' placeholder='Enter max word length for essay' />
+                                            <TextInput value={state?.word_length} onChange={v => onChangeHandler('word_length', v)} label='Essay length' placeholder='Enter max word length for essay' />
                                             <span className='absolute bottom-2 text-secondary text-sm flex items-center right-1 h-8 bg-white rounded-r px-4 border-l border-primary-stroke'>
                                                 Words
                                             </span>
@@ -401,7 +602,7 @@ const PreviewWIndow = ({ visible = false, onClose }: { visible?: boolean, onClos
                                         <div>
                                             <label className='mb-2 text-body text-base block'>Ideal answer</label>
                                             <div className="flex">
-                                                <TextInput className='w-[80px] h-[42px] rounded-[4px]' />
+                                                <TextInput value={state?.gpa!} onChange={v => onChangeHandler('gpa', v)} className='w-[80px] h-[42px] rounded-[4px]' />
                                                 <span className='ml-2 text-xs text-secondary mt-3'>minimum</span>
                                             </div>
                                         </div>
@@ -416,24 +617,24 @@ const PreviewWIndow = ({ visible = false, onClose }: { visible?: boolean, onClos
                         <Collapse.Panel key={'5'} header={<CollapseHeader title='Award Distribution' subtitle='Narrow down your candidates' />}>
                             <div className="px-6 max-w-[410px] smMax:max-w-full smMax:px-0">
                                 <div className="mb-4">
-                                    <TextInput label='Total number of beneficiaries' />
+                                    <TextInput value={state?.beneficiary} onChange={(v) => onChangeHandler('beneficiary', v)} label='Total number of beneficiaries' />
                                 </div>
                                 <div className="mb-4">
                                     <label className='text-sm font-medium text-primary'>Distribute fund by position</label>
                                     <div className="flex items-center gap-4 my-4">
-                                        <CustomRadio label='Yes' name='distribute' />
-                                        <CustomRadio label='No' name='distribute' />
+                                        <CustomRadio onChange={(v) => onChangeHandler('distribute', v.target.value)} label='Yes' value={'true'} name='distribute' />
+                                        <CustomRadio onChange={(v) => onChangeHandler('distribute', v.target.value)} label='No' value={'false'} name='distribute' />
                                     </div>
                                     <p className='text-xs text-body'>Total award will be distributed according to your  settings</p>
                                 </div>
                                 <div className="mb-4">
-                                    <TextInput label='Winner' />
+                                    <TextInput value={state?.winner} onChange={(v) => onChangeHandler('winner', v)} label='Winner' />
                                 </div>
                                 <div className="mb-4">
-                                    <TextInput label='2. First Runner Up' />
+                                    <TextInput value={state?.first_runner} onChange={(v) => onChangeHandler('first_runner', v)} label='2. First Runner Up' />
                                 </div>
                                 <div className="mb-4">
-                                    <TextInput label='3. Second Runner Up' />
+                                    <TextInput value={state?.second_runner} onChange={(v) => onChangeHandler('second_runner', v)} label='3. Second Runner Up' />
                                 </div>
                                 <button className='text-primary-purple text-base flex items-center font-normal'>
                                     <span className='mr-2 text-xs'><FaPlus /></span>
@@ -447,88 +648,48 @@ const PreviewWIndow = ({ visible = false, onClose }: { visible?: boolean, onClos
                                     <p className='mb-2'>Invite multiple team members</p>
                                     <div className="flex items-center gap-4 smMax:flex-col">
                                         <div className='w-6/12 smMax:w-full'>
-                                            <TextInput label='Email' placeholder='Enter valid email' containerClass='mb-0' />
+                                            <TextInput value={email} onChange={(v) => setEmail(v)} label='Email' placeholder='Enter valid email' containerClass='mb-0' />
                                         </div>
                                         <div className='w-6/12 smMax:w-full'>
                                             <MultiSelectCheckBox
-                                                options={['Admin', 'Member']}
+                                                options={[{label: 'Admin', value: '1'},{label: 'Member', value: '2'}]}
                                                 customOption={false}
                                                 mode='single'
                                                 hideSearch={true}
                                                 placeholder='Select'
+                                                onChange={(v) => addTeam(v as string)}
                                                 label={<label className='text-sm text-primary font-medium block mb-2'>Role</label>}
                                             />
                                         </div>
                                     </div>
                                 </div>
                                 <div className='w-9/12 max-w-full mt-5 smMax:w-full'>
-                                    <div className="flex items-center justify-between border-b border-primary-stroke last-of-type:border-0 mb-4 pb-2">
-                                        <div className="flex items-center w-5/12 text-sm text-primary smMax:flex-col smMax:w-5/12 smMax:items-start">
-                                            <p>iamapj@yahoo.com</p>
-                                            <span className='inline-flex smMax:ml-0 smMax:mt-1 ml-2 bg-primary-orange bg-opacity-10 rounded-[4px] text-body px-2 py-1 capitalize'>
-                                                pending
-                                            </span>
-                                        </div>
-                                        <div className="w-2/12 smMax:w-4/12 mr-auto">
-                                            <MultiSelectCheckBox
-                                                options={['Admin', 'Member']}
-                                                customOption={false}
-                                                mode='single'
-                                                hideSearch={true}
-                                                placeholder='Select'
-                                                inputClass='border-0 focus:bg-white'
-                                                value={'Admin'}
-                                            />
-                                        </div>
-                                        <button className="text-body text-2xl text-right">
-                                            <DeleteIcon />
-                                        </button>
-                                    </div>
-                                    <div className="flex items-center justify-between border-b border-primary-stroke last-of-type:border-0 mb-4 pb-2">
-                                        <div className="flex items-center w-5/12 text-sm text-primary smMax:flex-col smMax:w-5/12 smMax:items-start">
-                                            <p>iamapj@yahoo.com</p>
-                                            <span className='inline-flex smMax:ml-0 smMax:mt-1 ml-2 bg-primary-orange bg-opacity-10 rounded-[4px] text-body px-2 py-1 capitalize'>
-                                                pending
-                                            </span>
-                                        </div>
-                                        <div className="w-2/12 smMax:w-4/12 mr-auto">
-                                            <MultiSelectCheckBox
-                                                options={['Admin', 'Member']}
-                                                customOption={false}
-                                                mode='single'
-                                                hideSearch={true}
-                                                placeholder='Select'
-                                                inputClass='border-0 focus:bg-white'
-                                                value={'Admin'}
-                                            />
-                                        </div>
-                                        <button className="text-body text-2xl text-right">
-                                            <DeleteIcon />
-                                        </button>
-                                    </div>
-                                    <div className="flex items-center justify-between border-b border-primary-stroke last-of-type:border-0 mb-4 pb-2">
-                                        <div className="flex items-center w-5/12 text-sm text-primary smMax:flex-col smMax:w-5/12 smMax:items-start">
-                                            <p>iamapj@yahoo.com</p>
-                                            <span className='inline-flex smMax:ml-0 smMax:mt-1 ml-2 bg-primary-orange bg-opacity-10 rounded-[4px] text-body px-2 py-1 capitalize'>
-                                                pending
-                                            </span>
-                                        </div>
-                                        <div className="w-2/12 smMax:w-4/12 mr-auto">
-                                            <MultiSelectCheckBox
-                                                options={['Admin', 'Member']}
-                                                customOption={false}
-                                                mode='single'
-                                                hideSearch={true}
-                                                placeholder='Select'
-                                                inputClass='border-0 focus:bg-white'
-                                                value={'Admin'}
-                                            />
-                                        </div>
-                                        <button className="text-body text-2xl text-right">
-                                            <DeleteIcon />
-                                        </button>
-                                    </div>
-
+                                    {
+                                        teams.map((team, idx) => (
+                                            <div key={`team_${idx}`} className="flex items-center justify-between border-b border-primary-stroke last-of-type:border-0 mb-4 pb-2">
+                                                <div className="flex items-center w-5/12 text-sm text-primary smMax:flex-col smMax:w-5/12 smMax:items-start">
+                                                    <p>{team.email}</p>
+                                                    <span className='inline-flex smMax:ml-0 smMax:mt-1 ml-2 bg-primary-orange bg-opacity-10 rounded-[4px] text-body px-2 py-1 capitalize'>
+                                                        {team.status}
+                                                    </span>
+                                                </div>
+                                                <div className="w-2/12 smMax:w-4/12 mr-auto">
+                                                    <MultiSelectCheckBox
+                                                        options={[{label: 'Admin', value: '1'},{label: 'Member', value: '2'}]}
+                                                        customOption={false}
+                                                        mode='single'
+                                                        hideSearch={true}
+                                                        placeholder='Select'
+                                                        inputClass='border-0 focus:bg-white'
+                                                        value={team.roleId}
+                                                    />
+                                                </div>
+                                                <button className="text-body text-2xl text-right">
+                                                    <DeleteIcon />
+                                                </button>
+                                            </div>
+                                        ))
+                                    }
                                 </div>
                             </div>
                         </Collapse.Panel>
@@ -536,15 +697,17 @@ const PreviewWIndow = ({ visible = false, onClose }: { visible?: boolean, onClos
                 </div>
             </div>
             <div className="px-10 smMax:px-4 sm:h-[100px] smMax:mt-0 border-t border-primary-stroke mt-16 flex justify-between smMax:justify-center smMax:py-4 items-center smMax:flex-col">
-                <button className='smMax:w-full smMax:justify-center flex items-center bg-white rounded-lg border border-primary-stroke text-primary text-base font-medium h-[52px] smMax:h-14 px-4'>
+                <button onClick={() => handleSubmit(true)} className='smMax:w-full smMax:justify-center flex items-center bg-white rounded-lg border border-primary-stroke text-primary text-base font-medium h-[52px] smMax:h-14 px-4'>
                     <span className='mr-2'><AiOutlineCloud /></span>
                     Save for later
                 </button>
-                <button className='smMax:w-full smMax:justify-center smMax:mt-4 bg-primary-purple text-white flex items-center text-base font-semibold h-[52px] smMax:h-14 px-4 rounded-lg'>
+                <button onClick={() => handleSubmit(false)} className='smMax:w-full smMax:justify-center smMax:mt-4 bg-primary-purple text-white flex items-center text-base font-semibold h-[52px] smMax:h-14 px-4 rounded-lg'>
                     <span className='font-normal mr-1'>Next:</span> Review & Post
                 </button>
             </div>
             <WhoCanApplyModal
+                state={state}
+                onChangeHandler={onChangeHandler}
                 visible={visbleWhoCanApply}
                 onClose={() => setVisibleWhoCanApply(false)} />
             <CropModal
