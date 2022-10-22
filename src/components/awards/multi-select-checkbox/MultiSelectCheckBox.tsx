@@ -108,6 +108,7 @@ interface MultiSelectCheckBoxProps {
     mode?: 'single' | 'multiple';
     hideSearch?: boolean;
     customOption?: boolean;
+    error?: string | boolean;
 }
 
 const MultiSelectCheckBox = (
@@ -121,6 +122,7 @@ const MultiSelectCheckBox = (
         label = undefined,
         options = [],
         value = [],
+        error,
         onChange
     }: MultiSelectCheckBoxProps
 ) => {
@@ -183,7 +185,10 @@ const MultiSelectCheckBox = (
 
         return value;
     };
-
+    
+    useEffect(()=> {
+        setFilteredOptions([...options]);
+    },[options])
 
     return (
         <div className={`w-full ${className}`}>
@@ -200,7 +205,10 @@ const MultiSelectCheckBox = (
             }>
                 <div className="relative w-full">
                     {label}
-                    <input value={(mode === 'single' && options) ? getValue('label', (options as []).find((opt: any) => getValue('value', opt) === selectedOptions) ?? '') : ''} placeholder={placeholder} className={`focus:caret-transparent h-12 rounded-lg w-full bg-white border border-[#E2E4E8] focus:bg-primary-purple focus:bg-opacity-5 focus:border-primary-purple focus:outline-none px-4 placeholder:text-body text-body text-sm ${inputClass}`} />
+                    <input 
+                        value={(mode === 'single' && options) ? getValue('label', (options as []).find((opt: any) => getValue('value', opt) === selectedOptions) ?? '') : ''} 
+                        placeholder={placeholder} 
+                        className={`focus:caret-transparent h-12 rounded-lg w-full bg-white border ${error ? 'border-error' : 'border-[#E2E4E8]'} focus:bg-primary-purple focus:bg-opacity-5 focus:border-primary-purple focus:outline-none px-4 placeholder:text-body text-body text-sm ${inputClass}`} />
                     <span className='absolute text-primary right-4 bottom-4 text-base'>
                         <FiChevronDown />
                     </span>

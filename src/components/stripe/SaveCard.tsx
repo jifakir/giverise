@@ -6,6 +6,8 @@ import CountrySelect from '../country-select/CountrySelect';
 import axios from 'axios';
 import { useAuth } from '../../hooks/useAuth';
 import api from '../../utils/api';
+import { useSaveCardMutation } from '../../store/api';
+import { notification } from 'antd';
 
 
 type CardStateTypes = {
@@ -23,7 +25,7 @@ const SaveCard = ({onClose}:{onClose:() => void}) => {
     country: '',
     post_code: ''
   });
-
+  const [saveCard, result] = useSaveCardMutation();
   const { token, user } = useAuth();
 
   const stripe = useStripe();
@@ -85,14 +87,11 @@ const SaveCard = ({onClose}:{onClose:() => void}) => {
       console.log(paymentMethod);
       
       try{
-        console.log(user);
-        const res = await api(`/payment-gateway/stripe/savecard`,{
-            payment_method: paymentMethod?.id,
-            description: 'Save the card'
-          });
-        console.log(res);
+        await saveCard({ payment_method: paymentMethod?.id });
+        notification.success({message: 'Card added successfully!'})
         onClose();
-      }catch(err){
+      }catch(err:any){
+        notification.error({message: err?.message});
         console.log(err);
       }
     }
@@ -134,7 +133,7 @@ const SaveCard = ({onClose}:{onClose:() => void}) => {
             <span className='ml-2 text-sm text-primary'>Remember this card for later user</span>
         </label>
         <div className="flex items-center justify-end mt-4">
-            <button className='text-white bg-primary-purple rounded-lg text-base font-medium h-12 w-[98px] flex items-center justify-center'>
+            <button disabled={result.isLoading} className='text-white bg-primary-purple rounded-lg text-base font-medium h-12 w-[98px] flex items-center justify-center'>
                 Add Card
             </button>
         </div>

@@ -11,7 +11,7 @@ const AuthModal = ({
   onClose: () => void;
 }) => {
   const [step, setStep] = useState<number>();
-  const [activeForm, setActiveForm] = useState<"signup" | "login">("signup");
+  const [activeForm, setActiveForm] = useState<"signup" | "login">("login");
 
   const handleChangeForm = (step = 2, form = "signup") => {
     //this function will be called when user signup with social media
@@ -45,7 +45,10 @@ const AuthModal = ({
 
         <div className="text-center justify-self-end">
           <p className="flex items-center justify-center text-base text-body">
-            Already have an account?{" "}
+            {
+              activeForm === "signup" ? "Already have an account? " :
+              "Don't have an account?"
+            }
             <a
               onClick={() =>
                 setActiveForm(activeForm === "signup" ? "login" : "signup")

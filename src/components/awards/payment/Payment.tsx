@@ -3,12 +3,14 @@ import React, { useEffect, useState } from 'react'
 import { BsX } from 'react-icons/bs';
 import { FaAngleDown, FaPlus } from 'react-icons/fa';
 import { awardForm } from '../../../pages/awards/create';
+import { useFetchCardsQuery } from '../../../store/api';
 import api from '../../../utils/api';
 import TextInput from '../../auth-modal/TextInput';
 import CountrySelect from '../../country-select/CountrySelect';
 import { CustomRadio } from '../../forms';
 import { CreditCard } from '../../icons';
 import Stripe from '../../stripe';
+import { MultiSelectCheckBox } from '../multi-select-checkbox';
 
 
 interface IPMProps {
@@ -64,7 +66,14 @@ const cardsdemo = [
     { value: 'paypal', label: 'example@gmail.com' },
 ];
 
-const Payment = ({ state, onChangeHandler }: { state:awardForm, onChangeHandler:(name:string, val:any) => void }) => {
+const Payment = ({ state, onChangeHandler, errors }: 
+    { 
+        state:awardForm, 
+        onChangeHandler:(name:string, val:any) => void, 
+        errors:{
+            award_amount: string | undefined, 
+            tip_amount: string | undefined} }) => {
+
     const [showCardModal, setShowCardModal] = useState(false);
     const [paymentMethod, setPaymentMethod] = useState('card');
     const [amount, setAmount] = useState<string>();
@@ -72,23 +81,19 @@ const Payment = ({ state, onChangeHandler }: { state:awardForm, onChangeHandler:
     const [cards, setCard] = useState([]);
     const [selectedCard, setSelectedCard] = useState(cards[0]);
 
+    const { data, isLoading, isSuccess } = useFetchCardsQuery({undefined});
 
     useEffect(() => {
-        const fetchData = async () => {
-            try{
-                const res = await api('/payment-gateway/stripe/cardlist');
-                console.log("Res: ", res);
-                setCard(res?.data?.data?.map((itm:any) => ({
+        if(isSuccess){
+            setCard(data?.data?.data?.map((itm:any) => ({
                 label: `XXXX XXXX XXXX ${itm.card.last4}`, 
                 value: itm.card.last4, 
                 type: itm.card.brand})));
-            }catch(err){
-                console.log("Card error",err);
-            }
-        };
-            fetchData();
-    },[]);
+        }
+    },[isSuccess, data]);
 
+    console.log(data);
+    if(isLoading) return <div className="loading"></div>;
     const { award_amount, tip_amount } = state;
 
     return (
@@ -96,10 +101,10 @@ const Payment = ({ state, onChangeHandler }: { state:awardForm, onChangeHandler:
             <div className="flex items-center justify-between smMax:flex-col smMax:items-start">
                 <h3 className='font-bold text-[22px] text-primary leading-8 font-outfit'>Fund your award</h3>
                 <div className="flex items-center gap-4">
-                    <img src='/images/logos/mastercard.svg' className='max-w-full object-cover' />
-                    <img src='/images/logos/visa.svg' className='max-w-full object-cover' />
-                    <img src='/images/logos/paypal.png' className='max-w-full object-cover h-[11px]' />
-                    <img src='/images/logos/gpay.png' className='max-w-full object-cover h-[12px]' />
+                    <img src='/images/logos/mastercard.svg' className='max-w-full object-cover' alt='Master Card' />
+                    <img src='/images/logos/visa.svg' className='max-w-full object-cover' alt='Visa' />
+                    <img src='/images/logos/paypal.png' className='max-w-full object-cover h-[11px]' alt='Paypal' />
+                    <img src='/images/logos/gpay.png' className='max-w-full object-cover h-[12px]' alt='Gpay' />
                 </div>
             </div>
             <div className="flex items-center gap-4 mt-7 smMax:flex-wrap">
@@ -109,9 +114,15 @@ const Payment = ({ state, onChangeHandler }: { state:awardForm, onChangeHandler:
                 <CustomRadio checked={paymentMethod === 'gpay'} value='gpay' onChange={e => setPaymentMethod(e.target.value)} label='Google Pay' name='payment-method' />
             </div>
             <p className='mt-3 mb-6 text-body text-xs font-outfit'>This helps yourscholarship stand out to the right candidates. It’s the first thing they’ll see, so make it count!</p>
-            <div className="mb-5">
+            <div className="relative mb-5">
                 <h4 className='text-base font-medium text-primary mb-2'>How much would you like to award?</h4>
-                <TextInput value={state?.award_amount} onChange={(v) => onChangeHandler('award_amount', v)} placeholder='$' type='number' />
+                <TextInput 
+                    value={state?.award_amount} 
+                    onChange={(v) => onChangeHandler('award_amount', v)} 
+                    className="pl-6"
+                    error={errors?.award_amount}
+                    type='number' />
+                <span className="absolute left-4 bottom-[13px]">$</span>
             </div>
             <h4 className='text-base font-medium text-primary mb-2'>Payment Method</h4>
             {paymentMethod === 'card' && (
@@ -124,7 +135,7 @@ const Payment = ({ state, onChangeHandler }: { state:awardForm, onChangeHandler:
             )}
             {(paymentMethod === "paypal" || paymentMethod === "gpay") && (
                 <div className="flex items-center gap-2 mb-5 text-body text-sm">
-                    <img src={`/images/logos/${paymentMethod}.png`} className="h-3 object-cover" />
+                    <img src={`/images/logos/${paymentMethod}.png`} className="h-3 object-cover" alt='Image' />
                     <span>You will be redirected to {paymentMethod}</span>
                 </div>
             )}
@@ -137,15 +148,25 @@ const Payment = ({ state, onChangeHandler }: { state:awardForm, onChangeHandler:
                 <h4 className='text-base font-medium text-primary mb-2'>Tip Giverise Services</h4>
                 <div className="flex items-start gap-2">
                     <div className="relative w-[90%]">
-                        <label className='absolute top-2 left-3 z-[1] text-[10px] text-secondary font-outfit'>Tip amount</label>
-                        <TextInput value={state?.tip_amount} onChange={(v) => onChangeHandler('tip_amount', v)}  placeholder='Custom' className='pt-5' containerClass='!static' />
+                        <MultiSelectCheckBox 
+                            options={[
+                                {label: '0%', value: '0'},
+                                {label: '5%', value: '5'},
+                                {label: '10%', value: '10'},
+                                {label: '20%', value: '20'},
+                            ]}
+                            mode="single"
+                            error={errors?.tip_amount}
+                            onChange={(v) => onChangeHandler('tip_amount', v)} />
+                        {/* <label className='absolute top-2 left-3 z-[1] text-[10px] text-secondary font-outfit'>Tip amount</label>
+                        <TextInput value={state?.tip_amount} onChange={(v) => onChangeHandler('tip_amount', v)}  placeholder='Custom' className='pt-5' containerClass='!static' /> */}
                     </div>
                     <button className='h-12 px-4 flex flex-col items-center justify-center rounded-lg border border-primary-stroke text-sm text-primary'>
                         <span className='text-[10px]'>Amount</span>
                         <strong>$250</strong>
                     </button>
                 </div>
-                <p className='text-xs text-body'>Giverise has a 0% platform fee for organizers and relies on the generosity of donors like you to operate our service.</p>
+                <p className='text-xs text-body mt-1'>Giverise has a 0% platform fee for organizers and relies on the generosity of donors like you to operate our service.</p>
             </div>
             <Modal  visible={showCardModal} footer={null} closable={false} title={null}>
                 <Stripe onClose={() => setShowCardModal(false)} />

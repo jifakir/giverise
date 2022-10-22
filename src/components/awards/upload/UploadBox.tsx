@@ -1,9 +1,11 @@
-import { Modal, Slider } from "antd";
+import { Modal, notification, Slider } from "antd";
 import axios from "axios";
 import React, { useEffect, useRef, useState } from "react";
 import { AiOutlineZoomOut, AiOutlineZoomIn } from "react-icons/ai";
 import { FaPlus } from "react-icons/fa";
+import { RiLoaderFill } from 'react-icons/ri';
 import ReactCrop, { Crop, PixelCrop, centerCrop, makeAspectCrop } from "react-image-crop";
+import { useUploadImageMutation } from "../../../store/api";
 import { canvasPreview, toBlob } from "../../utils";
 
 interface CropModalProps {
@@ -99,14 +101,16 @@ export const CropModal = ({ isVisible = false, imgSrc = '', originalFile, onSave
         </Modal>
     )
 }
-const UploadBox = ({ onChange }:{ onChange: (val:string) => void }) => {
+
+const UploadBox = ({ onChange, error }:{error:string | undefined, onChange: (val:string) => void }) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [imgSrc, setImgSrc] = useState<string>();
     const [isVisible, setIsVisible] = useState(false);
     const [originalFile, setOriginalFile] = useState<File>();
     const [file, setFile] = useState<File>();
+    const [imgUrl, setImgUrl] = useState();
 
-
+    const [uploadImage, { data, isLoading, isError, isSuccess}] = useUploadImageMutation();
     const handleClick = () => {
         fileInputRef.current?.click();
     }
@@ -124,29 +128,36 @@ const UploadBox = ({ onChange }:{ onChange: (val:string) => void }) => {
 
     const onSave = (f: File) => {
         setFile(f);
+        const formData = new FormData();
+        formData.append('file',f!);
+        uploadImage(formData);
         setIsVisible(false);
     }
-
+    
     useEffect(()=> {
-        const saveFile = async (data:FormData) => {
-            const result = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/media/upload`,data);
-            onChange(result?.data?.data?.url);
-            return result;
-        };
-        if(file){
-            const formData = new FormData();
-            formData.append('file',file!);
-            saveFile(formData);
+        if(isSuccess){
+            setImgUrl(data?.data?.url);
+            onChange(data?.data?.url);
+            notification.success({message: 'Uploaded successfully!'});
         }
-    },[file]);
+    //  eslint-disable-next-line react-hooks/exhaustive-deps
+    },[isSuccess]);
 
     return (
         <>
-            <div onClick={handleClick} className={`mt-7 border border-primary-purple border-dashed rounded-lg h-[220px] w-full flex flex-col items-center justify-center cursor-pointer text-body text-sm`}>
-                <span className='text-primary-purple'><FaPlus /></span>
-                <p className='flex items-center my-2'>Upload your file by <span className='ml-2 text-primary-purple'>clicking here</span></p>
-                <p>Support png or jpg (max 5mb)</p>
-                <input type="file" onChange={onFileChange} ref={fileInputRef} className='hidden' accept="image/*" />
+            <div>
+                {
+                    !imgUrl ?
+                    <div onClick={handleClick} className={`mt-7 border border-primary-purple border-dashed rounded-lg h-[220px] w-full flex flex-col items-center justify-center cursor-pointer text-body text-sm`}>
+                        <span className='text-primary-purple'>{isLoading ? <RiLoaderFill className="text-3xl animate-spin" />: <FaPlus />}</span>
+                        <p className='flex items-center my-2'>Upload your file by <span className='ml-2 text-primary-purple'>clicking here</span></p>
+                        <p>Support png or jpg (max 5mb)</p>
+                        <input type="file" onChange={onFileChange} ref={fileInputRef} className='hidden' accept="image/*" />
+                    </div>:
+                    <div className={`mt-7 border border-primary-purple border-dashed overflow-hidden rounded-lg h-[220px] w-full flex flex-col items-center justify-center cursor-pointer text-body text-sm`}>
+                        <img src={imgUrl} alt="Uploaded Image" className="object-cover w-full h-full" />
+                    </div>
+                }
             </div>
             <CropModal
                 isVisible={isVisible}

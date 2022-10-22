@@ -1,24 +1,38 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { options, allStates } from '../../../dummy/data';
 import { awardForm } from '../../../pages/awards/create';
 import { CustomTagInput } from '../custom-tag-input';
 import { MultiSelectCheckBox } from '../multi-select-checkbox';
+import { Country, State  } from 'country-state-city';
+
 
 type WhoProps = {
     fromModal?: boolean
     onChangeHandler: (name: string, val: any) => void
-    state: awardForm
+    state: awardForm,
+    error?: string | boolean
 };
 
-const WhoCanApply = ({ fromModal = false, state, onChangeHandler  }:WhoProps ) => {
+const WhoCanApply = ({ fromModal = false, error, state, onChangeHandler  }:WhoProps ) => {
     
     const [selectedRegion, setSelectedRegion] = useState<'worldwide' | 'us' | 'local' | string>('');
+    const [countries, setCountries] = useState(() => Country.getAllCountries().map((v:{name:string, isoCode:string}) => ({label: v.name, value: v.isoCode})))
+    const [states, setStates] = useState<{label: string, value: string}[]>(State.getStatesOfCountry(state.country).map((v:{name:string, isoCode:string}) => ({label: v.name, value: v.isoCode})));
+    
     const regionHandler = (v:string) => {
         setSelectedRegion(v as string);
         onChangeHandler('region', v);
     };
 
-    const {region, states, nationalities, country, tags } = state;
+    const {region, nationalities, country, tags } = state;
+
+    useEffect(() => {
+      const countryState = State.getStatesOfCountry(state.country).map((v:{name:string, isoCode:string}) => ({label: v.name, value: v.isoCode}))
+      setStates([...countryState]);
+      console.log(countryState);
+    },[state]);
+
+    
 
     return (
         <>
@@ -108,25 +122,27 @@ const WhoCanApply = ({ fromModal = false, state, onChangeHandler  }:WhoProps ) =
                         label={(
                             <label className="flex items-center mb-2">
                                 <strong className="mr-2">Country</strong>
-                                (optional)
                             </label>
                         )}
+                        mode="single"
                         placeholder='Add country'
-                        options={allStates}
+                        options={countries}
                         onChange={(v) => onChangeHandler('country', v)}
+                        error={error}
+                        value={state.country}
                         className="mb-5"
                     />
 
                     <MultiSelectCheckBox
                         label={(
                             <label className="flex items-center mb-2">
-                                <strong className="mr-2">Nationalities</strong>
+                                <strong className="mr-2">States</strong>
                                 (optional)
                             </label>
                         )}
                         placeholder='Add nationalities'
-                        options={allStates}
-                        onChange={(v) => onChangeHandler('nationalities', v)}
+                        options={states}
+                        onChange={(v) => onChangeHandler('states', v)}
                         className="mb-5"
                     />
 

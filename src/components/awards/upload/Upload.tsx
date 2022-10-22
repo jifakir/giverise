@@ -4,18 +4,24 @@ import { DatePicker } from "../../date-picker";
 import { CustomRadio } from "../../forms";
 import UploadBox from "./UploadBox";
 
-const Upload = ({ onChangeHandler }:{ onChangeHandler: (name:string, val:any) => void }) => {
+const Upload = ({ onChangeHandler, errors }:{ errors:{ coverMedia:string, deadline:string }, onChangeHandler: (name:string, val:any) => void }) => {
 
     const [coverType, setCoverType] = useState('photo');
     const [link, setLink] = useState('');
+    const [ylink, setYLink] = useState('');
 
     const handleOnChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setCoverType(e.target.value);
+        onChangeHandler('cover_type', e.target.value);
     }
 
     const linkHandler = (v:string) => {
         onChangeHandler('coverMedia', v);
-        setLink(v as string);
+        if(coverType === 'photo'){
+            setLink(v as string);
+        }else{
+            setYLink(v as string);
+        }
     };
 
     return (
@@ -28,19 +34,22 @@ const Upload = ({ onChangeHandler }:{ onChangeHandler: (name:string, val:any) =>
                 <CustomRadio name="cover-type" value="youtube" checked={coverType === 'youtube'} label="YouTube Link" onChange={handleOnChange} />
             </div>
 
-            {coverType === 'photo' && (
-                <UploadBox onChange={(v) => linkHandler(v)} />
-            )}
+            {
+                coverType === 'photo' && (
+                    <UploadBox error={errors?.coverMedia} onChange={(v) => linkHandler(v)} />
+                )
+            }
 
-            {coverType === 'youtube' && (
-                <div className="relative mt-6">
-                    <label className='absolute bottom-6 left-3 text-xs text-body block z-10'>
-                        Youtube Link
-                    </label>
-                    <TextInput value={link} onChange={v => linkHandler(v)}  placeholder='https://' className='pt-6' />
-                </div>
-            )}
-
+            {
+                coverType === 'youtube' && (
+                    <div className="relative mt-6">
+                        <label className='absolute bottom-6 left-3 text-xs text-body block z-10'>
+                            Youtube Link
+                        </label>
+                        <TextInput value={ylink} onChange={v => linkHandler(v)}  placeholder='https://' className='pt-6' />
+                    </div>
+                )
+            }
             <div className="mt-10 mb-4">
                 <DatePicker onChange={(v) => onChangeHandler('deadline', v)} />
             </div>

@@ -1,4 +1,4 @@
-import { Timeline } from 'antd';
+import { notification, Timeline } from 'antd';
 import React, { useEffect, useState } from 'react'
 import { BiInfoCircle } from 'react-icons/bi';
 import { RiCloseLine } from 'react-icons/ri';
@@ -7,6 +7,8 @@ import { CustomTagInput, MultiSelectCheckBox, Payment, PreviewWIndow, RichTextEd
 import 'react-image-crop/dist/ReactCrop.css';
 import api from '../../../utils/api';
 import { Descendant } from 'slate';
+import { useFetchCardsQuery } from '../../../store/api';
+import { Card } from '../../../store/types';
 
 const steps = ['describe', 'Next: Review Award', 'Next: Upload cover photo / set deadline', 'Next: Fund award', 5, 6];
 
@@ -14,6 +16,7 @@ export type DocumentType = {
     description: string
     files: string[]
 };
+
 
 export type awardForm = {
     campaignId: number | null
@@ -78,6 +81,18 @@ const CreatePage = () => {
     const [showPreviewDrawer, setShowPreviewDrawer] = useState(false);
     const [categories, setCategories] = useState([]);
     const [title, setTitle] = useState<string>();
+    const [errors, setError] = useState({
+        description: '',
+        states: '',
+        country: '',
+        category: '',
+        title: '',
+        photo: '',
+        dealine: '',
+        award_amount: '',
+        tip_amount: ''
+    });
+
     const [state, setState] = useState<awardForm>({
         campaignId: null,
         title: '',
@@ -122,11 +137,30 @@ const CreatePage = () => {
 
     const goNextStep = () => {
         
-        if(currentStep === 0 && state.description.length === 0) return;
-        if(currentStep === 1 && !state.region) return;
-        if(currentStep === 2 && state.categories.length === 0) return;
-        if(currentStep === 3 && !state.title) return;
+        if(currentStep === 0 && !state?.description[0].children[0].text){
+            setError(prev => ({ ...prev, description: 'Please, enter some text' }));
+            return;
+        };
+
+        if(currentStep === 1){
+            if(state.region === 'local' && !state.country){
+                setError(prev => ({...prev, country: 'Country is required!'}));
+                notification.error({message: "Select a country, Please."});
+                return;
+            }
+        };
+        if(currentStep === 2 && state.categories.length === 0){
+            setError(prev => ({ ...prev, category: 'Category field is required'}));
+            notification.error({message: 'Category field is required!'});
+            return;
+        };
+        if(currentStep === 3 && !state.title){
+            setError(prev => ({...prev, title: 'Title is required!'}));
+            return;
+        };
+
         if(currentStep === 4){
+            console.log(state);
             if(!state.coverMedia || !state.deadline){
                 return
             }else{
@@ -154,7 +188,21 @@ const CreatePage = () => {
                 postData();
             }
         };
-        if(currentStep === 5 && (!state.award_amount || !state.tip_amount)) return;
+        if(currentStep === 5 && (!state.award_amount || !state.tip_amount)){
+            if(!state.award_amount && !state.tip_amount){
+                setError(prev => ({...prev, award_amount: 'Award amount is requried!'}));
+                setError(prev => ({...prev, tip_amount: 'Tip amount is requried!'}));
+                return;
+            }
+            if(!state.award_amount){
+                setError(prev => ({...prev, award_amount: 'Award amount is requried!'}));
+                return;
+            }
+            if(!state.tip_amount){
+                setError(prev => ({...prev, tip_amount: 'Tip amount is requried!'}));
+                return;
+            }
+        };
         if (currentStep < 5) {
             setCurrentStep(currentStep + 1);
         } else {
@@ -177,6 +225,10 @@ const CreatePage = () => {
         setState(prevState => ({...prevState, ['title']: v}));
     };
 
+    const {data} = useFetchCardsQuery({undefined});
+    console.log("Cards: ", data);
+    console.log("State: ", state?.country);
+
     useEffect(() => {
         const fetchCategorires = async () => {
             const res = await api(`/categories`);
@@ -185,7 +237,7 @@ const CreatePage = () => {
         }
         fetchCategorires();
     },[]);
-    
+
     return (
         <div className='flex'>
             <div className='bg-primary min-h-screen pt-[100px] xl:px-[60px] xl:w-[520px] lg:w-[400px] lg:px-10 mdMax:hidden'>
@@ -234,7 +286,7 @@ const CreatePage = () => {
                             <>
                                 <h3 className='text-[22px] font-bold text-primary leading-8 mb-2'>Describe your award</h3>
                                 <p className='text-secondary font-normal text-sm mb-7'>Understanding that self-worth is the beginning of success.</p>
-                                <RichTextEditor defaultValue={state?.description || null} onChange={(v) => onChangeHandler('description', v)} />
+                                <RichTextEditor defaultValue={state?.description || null} error={errors.description} onChange={(v) => onChangeHandler('description', v)} />
                                 {/* <p className='w-full text-right text-secondary text-xs mt-2'>0/75</p> */}
                                 <h4 className='flex items-center text-sm font-medium text-primary mt-6 mb-6'>
                                     <span className='mr-4'>
@@ -270,7 +322,7 @@ const CreatePage = () => {
                         )}
 
                         {currentStep === 1 && (
-                            <WhoCanApply state={state} onChangeHandler={onChangeHandler} />
+                            <WhoCanApply error={errors?.country} state={state} onChangeHandler={onChangeHandler} />
                         )}
 
                         {currentStep === 2 && (
@@ -284,6 +336,8 @@ const CreatePage = () => {
                                     placeholder='Select category'
                                     options={categories}
                                     className="mb-5"
+                                    error={errors?.category}
+                                    value={state?.categories}
                                     onChange={v => onChangeHandler('categories', v)}
                                 />
                                 <CustomTagInput
@@ -311,7 +365,8 @@ const CreatePage = () => {
                                     onChange={v => onTitleHandler(v)} 
                                     placeholder='Enter award title' 
                                     className='focus:bg-primary-purple focus:bg-opacity-5' 
-                                    containerClass='mb-2' />
+                                    containerClass='mb-2'
+                                    error={errors?.title} />
                                 <p className="w-full text-right text-sm">0/75</p>
                                 <h4 className='flex items-center text-sm font-medium text-primary mt-4 mb-6'>
                                     <span className='mr-4'>
@@ -339,7 +394,7 @@ const CreatePage = () => {
                         )}
 
                         {currentStep === 5 && (
-                            <Payment state={state} onChangeHandler={onChangeHandler} />
+                            <Payment state={state} errors={errors} onChangeHandler={onChangeHandler} />
                         )}
                     </div>
                 </div>

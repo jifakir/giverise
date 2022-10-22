@@ -42,8 +42,8 @@ declare module 'slate' {
 }
 
 
-const RichTextEditor = ({ placeholder = 'Enter some rich text…', onChange, defaultValue }: 
-    {placeholder?: string, defaultValue?:Descendant[], onChange?: (v:Descendant[]) => void}
+const RichTextEditor = ({ placeholder = 'Enter some rich text…', onChange, defaultValue, error }: 
+    { placeholder?: string, defaultValue?:Descendant[], onChange?: (v:Descendant[]) => void, error?: string | boolean }
     ) => {
     const renderElement = useCallback((props: any) => <Element {...props} />, [])
     const renderLeaf = useCallback((props: any) => <Leaf {...props} />, [])
@@ -73,7 +73,7 @@ const RichTextEditor = ({ placeholder = 'Enter some rich text…', onChange, def
                 <BlockButton format="justify" span={<FaAlignJustify />} />
             </div>
             <Editable
-                className='h-[170px] border overflow-x-hidden overflow-y-auto border-primary-stroke rounded-lg p-4 w-full focus:border-primary-purple focus:bg-primary-purple focus:bg-opacity-5 text-body text-sm list-outside'
+                className={`h-[170px] border overflow-x-hidden overflow-y-auto rounded-lg p-4 w-full focus:border-primary-purple focus:bg-primary-purple focus:bg-opacity-5 text-body text-sm list-outside ${error ? 'border-error' : 'border-primary-stroke'}`}
                 renderElement={renderElement}
                 renderLeaf={renderLeaf}
                 placeholder={placeholder}

@@ -131,7 +131,7 @@ const LoginForm = ({
                 selectedAuthProvider === "facebook"
               }
               logo="facebook.png"
-              text="Sign up with Facebook"
+              text="Sign in with Facebook"
               onClick={() => handleAuthButtonClick("facebook")}
             />
             <OAuthProviderButton

@@ -1,5 +1,5 @@
 import { Drawer, Collapse, Modal } from 'antd';
-import React, { ChangeEvent, useRef, useState } from 'react'
+import React, { ChangeEvent, useEffect, useRef, useState } from 'react'
 import { AiOutlineCloud } from 'react-icons/ai';
 import { BiInfoCircle } from 'react-icons/bi';
 import { BsX, BsPlusCircle, BsCheckCircle, BsArrowLeftShort } from 'react-icons/bs';
@@ -14,11 +14,13 @@ import useBreakpoint from 'antd/lib/grid/hooks/useBreakpoint';
 import WhoCanApply from '../who-can-apply';
 import { CropModal } from '../upload/UploadBox';
 import api from '../../../utils/api';
-import { options } from '../../../dummy/data';
+import { categories, documents, options } from '../../../dummy/data';
 import axios from 'axios';
 import { awardForm } from '../../../pages/awards/create';
 import dayjs from 'dayjs';
 import { MdDone } from 'react-icons/md';
+import { DatePicker } from '../../date-picker';
+import { useFetchCategoriesQuery, useFetchInvitationsQuery, useSendInvitationMutation } from '../../../store/api';
 
 type PreviewProps = {
     visible: boolean,
@@ -52,7 +54,114 @@ const WhoCanApplyModal = ({ state, visible = false, onClose, onChangeHandler }: 
             </div>
             <WhoCanApply state={state} onChangeHandler={onChangeHandler} fromModal={true} />
             <div className="flex items-center justify-end mt-6">
-                <button className='bg-primary-purple text-white font-medium text-base rounded-[4px] grid place-items-center h-12 w-[71px]'>
+                <button onClick={onClose} className='bg-primary-purple text-white font-medium text-base rounded-[4px] grid place-items-center h-12 w-[71px]'>
+                    Done
+                </button>
+            </div>
+        </Modal>
+    )
+};
+
+const CategoryModal = ({ visible, onClose, state, onChangeHandler, error }:{ state:awardForm, error?: string | undefined, visible?: boolean; onClose: () => void, onChangeHandler: (name:string, val:any) => void}) => {
+    
+    const {data} = useFetchCategoriesQuery({undefined});
+    console.log(data);
+
+    return (
+        <Modal visible={visible} closable={false} footer={null}>
+            <div className="flex items-center mb-5">
+                <button onClick={onClose} className='w-6 h-6 rounded-full grid place-items-center bg-primary-purple bg-opacity-10 text-primary text-lg'>
+                    <BsArrowLeftShort />
+                </button>
+                <h3 className='mx-auto text-lg font-bold text-primary'>Category</h3>
+            </div>
+            <MultiSelectCheckBox
+                hideSearch={true}
+                customOption={true}
+                mode='multiple'
+                placeholder='Select category'
+                options={data?.data?.map(( itm:{ title: string, id:number }) => ({label: itm.title, value: itm.id.toString()}))}
+                className="mb-5"
+                error={error}
+                value={state?.categories}
+                onChange={v => onChangeHandler('categories', v)}
+            />
+            <div className="flex items-center justify-end mt-6">
+                <button onClick={onClose} className='bg-primary-purple text-white font-medium text-base rounded-[4px] grid place-items-center h-12 w-[71px]'>
+                    Done
+                </button>
+            </div>
+        </Modal>
+    )
+};
+
+const DeadlineModal = ({ visible, onClose, state, onChangeHandler, error }:{ state:awardForm, error?: string | undefined, visible?: boolean; onClose: () => void, onChangeHandler: (name:string, val:any) => void}) => {
+    
+    return (
+        <Modal visible={visible} closable={false} footer={null}>
+            <div className="flex items-center mb-5">
+                <button onClick={onClose} className='w-6 h-6 rounded-full grid place-items-center bg-primary-purple bg-opacity-10 text-primary text-lg'>
+                    <BsArrowLeftShort />
+                </button>
+                <h3 className='mx-auto text-lg font-bold text-primary'>Application deadline</h3>
+            </div>
+            <DatePicker
+                onChange={(v) => onChangeHandler('deadline', v)} />
+            <div className="flex items-center justify-end mt-6">
+                <button onClick={onClose} className='bg-primary-purple text-white font-medium text-base rounded-[4px] grid place-items-center h-12 w-[71px]'>
+                    Done
+                </button>
+            </div>
+        </Modal>
+    )
+};
+
+const AwardModal = ({ visible, onClose, state, onChangeHandler, errors }:{ state:awardForm, errors?: { award_amount: string, tip_amount: string }, visible?: boolean; onClose: () => void, onChangeHandler: (name:string, val:any) => void}) => {
+    
+    return (
+        <Modal visible={visible} closable={false} footer={null}>
+            <div className="flex items-center mb-5">
+                <button onClick={onClose} className='w-6 h-6 rounded-full grid place-items-center bg-primary-purple bg-opacity-10 text-primary text-lg'>
+                    <BsArrowLeftShort />
+                </button>
+                <h3 className='mx-auto text-lg font-bold text-primary'>Award Total</h3>
+            </div>
+            <div className="relative mb-5">
+                <h4 className='text-base font-medium text-primary mb-2'>How much would you like to award?</h4>
+                <TextInput 
+                    value={state?.award_amount} 
+                    onChange={(v) => onChangeHandler('award_amount', v)} 
+                    className="pl-6"
+                    error={errors?.award_amount}
+                    type='number' />
+                <span className="absolute left-4 bottom-[13px]">$</span>
+            </div>
+            <div className="mb-5">
+                <h4 className='text-base font-medium text-primary mb-2'>Tip Giverise Services</h4>
+                <div className="flex items-start gap-2">
+                    <div className="relative w-[90%]">
+                        <MultiSelectCheckBox 
+                            options={[
+                                {label: '0%', value: '0'},
+                                {label: '5%', value: '5'},
+                                {label: '10%', value: '10'},
+                                {label: '20%', value: '20'},
+                            ]}
+                            mode="single"
+                            error={errors?.tip_amount}
+                            onChange={(v) => onChangeHandler('tip_amount', v)} />
+                        {/* <label className='absolute top-2 left-3 z-[1] text-[10px] text-secondary font-outfit'>Tip amount</label>
+                        <TextInput value={state?.tip_amount} onChange={(v) => onChangeHandler('tip_amount', v)}  placeholder='Custom' className='pt-5' containerClass='!static' /> */}
+                    </div>
+                    <button className='h-12 px-4 flex flex-col items-center justify-center rounded-lg border border-primary-stroke text-sm text-primary'>
+                        <span className='text-[10px]'>Amount</span>
+                        <strong>$250</strong>
+                    </button>
+                </div>
+                <p className='text-xs text-body mt-1'>Giverise has a 0% platform fee for organizers and relies on the generosity of donors like you to operate our service.</p>
+            </div>
+            <div className="flex items-center justify-end mt-6">
+                <button onClick={onClose} className='bg-primary-purple text-white font-medium text-base rounded-[4px] grid place-items-center h-12 w-[71px]'>
                     Done
                 </button>
             </div>
@@ -126,14 +235,21 @@ const PreviewWIndow = ({ visible = false, onClose, state, onChangeHandler }:Prev
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [visbleWhoCanApply, setVisibleWhoCanApply] = useState(false);
     const [visibleCropModal, setVisibleCropModal] = useState(false);
+    const [visibleCatModal, setVisibleCatModal] = useState(false);
+    const [visibleDeadlineModal, setVisibleDeadlineModal] = useState(false);
+    const [visibleAwardModal, setVisibleAwardModal] = useState(false);
     const [file, setFile] = useState<File>();
-    const [imgSrc, setImgSrc] = useState<string>(state?.coverMedia);
+    const [imgSrc, setImgSrc] = useState<string>();
     const [email, setEmail] = useState('');
     const [docFiles, setFiles] = useState<string[]>([]);
     const [docDescription, setDescription] = useState<string>('');
-    const [teams, setTeams] = useState<Array<any>>([]);
     const [success, setSuccess] = useState(false);
     const [failed, setFailed] = useState(false);
+
+
+    const { data:categories } = useFetchCategoriesQuery({undefined});
+    const [ sendInvitation, result ] = useSendInvitationMutation();
+    const { data:teams } = useFetchInvitationsQuery({undefined});
 
     const onSave = (f: File) => {
         setFile(f);
@@ -163,15 +279,11 @@ const PreviewWIndow = ({ visible = false, onClose, state, onChangeHandler }:Prev
     const addTeam = async (val:string) => {
         if(!email) return;
         try{
-            const postres = await api(`/invitations`,{
+            await sendInvitation({
                 email,
                 roleId: val,
                 campaignId: state?.campaignId
             });
-            console.log("Post: ",postres);
-            const fetchRes = await api('/invitations');
-            console.log("Fetch: ",fetchRes);
-            setTeams(fetchRes?.data);
         }catch(err){
             console.log(err);
         }
@@ -249,7 +361,9 @@ const PreviewWIndow = ({ visible = false, onClose, state, onChangeHandler }:Prev
         
     };
 
-    console.log(teams);
+    useEffect(()=> {
+        setImgSrc(state?.coverMedia);
+    },[])
 
     return (
         <Drawer width={"100vw"} visible={visible} closable={false} bodyStyle={{ padding: '0px', backgroundColor: breakpoint.lg ? '#F3F3F3' : '#fff' }}>
@@ -306,7 +420,7 @@ const PreviewWIndow = ({ visible = false, onClose, state, onChangeHandler }:Prev
                             </button>
                         </div>
                         <div className='w-[60%] smMax:w-full'>
-                            <img src={imgSrc ? imgSrc : "/images/dummy/preview.jpg"} alt="img" className="object-cover w-full h-[202px] rounded-lg" />
+                            <img src={state?.coverMedia ?? '/images/dummy/preview.jpg'} alt="img" className="object-cover w-full h-[202px] rounded-lg" />
                         </div>
                     </div>
                     <div className="px-10 flex smMax:flex-col smMax:px-4 py-4 border-b border-primary-stroke">
@@ -320,7 +434,8 @@ const PreviewWIndow = ({ visible = false, onClose, state, onChangeHandler }:Prev
                             </div>
                         </div>
                         <div className='w-[60%] smMax:w-full'>
-                            <RichTextEditor 
+                            <RichTextEditor
+                                error={false}
                                 defaultValue={state?.description}
                                 onChange={(v) => onChangeHandler('description',v)} />
                         </div>
@@ -329,12 +444,21 @@ const PreviewWIndow = ({ visible = false, onClose, state, onChangeHandler }:Prev
                         <div className="mb-8">
                             <h3 className='text-lg font-medium text-[#1E1147]'>Who can apply</h3>
                             <div className="flex items-center text-xs text-body gap-2">
-                                <span>Us Only</span>
+                                <span>{state?.region === 'us' ? 'Us Only' : state?.region === 'worldwide' ? 'Worldwide': 'My Country'}</span>
                                 <button onClick={() => setVisibleWhoCanApply(true)}><Edit /></button>
                             </div>
                             <div className="flex items-center gap-2 flex-wrap mt-2">
                                 {
+                                    state?.region === 'us' ? 
                                     state?.nationalities?.map((v:string, idx:number) => (
+                                        <div key={idx} className='flex items-center gap-[3px] rounded-[3px] bg-primary-purple bg-opacity-5 border border-[#EAE9F2] text-primary text-xs px-3 py-1'>
+                                            {v}
+                                            <button className='text-sm'>
+                                                <BsX />
+                                            </button>
+                                        </div>
+                                    )):
+                                    state?.states?.map((v:string, idx:number) => (
                                         <div key={idx} className='flex items-center gap-[3px] rounded-[3px] bg-primary-purple bg-opacity-5 border border-[#EAE9F2] text-primary text-xs px-3 py-1'>
                                             {v}
                                             <button className='text-sm'>
@@ -349,14 +473,14 @@ const PreviewWIndow = ({ visible = false, onClose, state, onChangeHandler }:Prev
                             <h3 className='text-lg font-medium text-[#1E1147]'>Category</h3>
                             <div className="flex items-center text-xs text-body gap-2">
                                 <span>Educational tools</span>
-                                <span><Edit /></span>
+                                <span className='cursor-pointer' onClick={() => setVisibleCatModal(true)}><Edit /></span>
                             </div>
                             <div className="flex items-center gap-2 flex-wrap mt-2">
                                 {
                                     state?.categories.map((cat:string, idx:number) => (
                                         <div key={`category_${idx}`} className='flex items-center gap-[3px] rounded-[3px] bg-primary-purple bg-opacity-10 border border-[#EAE9F2] text-primary text-xs px-3 py-1'>
-                                            {cat}
-                                            <button className='text-sm'>
+                                            {categories?.data?.find((itm:{id:number}) => itm.id === Number(cat))?.title}
+                                            <button onClick={() => onChangeHandler('categories', state.categories.filter((itm:string) => itm !== cat))} className='text-sm'>
                                                 <BsX />
                                             </button>
                                         </div>
@@ -368,14 +492,14 @@ const PreviewWIndow = ({ visible = false, onClose, state, onChangeHandler }:Prev
                             <h3 className='text-lg font-medium text-[#1E1147]'>Application deadline</h3>
                             <div className="flex items-center text-xs text-body gap-2">
                                 <span>{dayjs(state?.deadline).format('DD-MM-YYYY')}</span>
-                                <span><Edit /></span>
+                                <span className='cursor-pointer' onClick={() => setVisibleDeadlineModal(true)}><Edit /></span>
                             </div>
                         </div>
                         <div className="">
                             <h3 className='text-lg font-medium text-[#1E1147]'>Award total</h3>
                             <div className="flex items-center text-xs text-body gap-2">
-                                <span>${state?.award_amount + state?.tip_amount}</span>
-                                <span><Edit /></span>
+                                <span>${eval(state?.award_amount + state?.tip_amount)}</span>
+                                <span onClick={() => setVisibleAwardModal(true)} className='cursor-pointer'><Edit /></span>
                             </div>
                         </div>
                     </div>
@@ -473,30 +597,19 @@ const PreviewWIndow = ({ visible = false, onClose, state, onChangeHandler }:Prev
                                 <div className='xl:max-w-[80%]'>
                                     <TextInput value={docDescription} onChange={v => setDescription(v)} placeholder='File description or name (e.g. 2022 GRE Result Transcript)' />
                                     <div className="border rounded-lg border-primary-stroke grid grid-cols-3 smMax:grid-cols-2 gap-4 p-4 mb-4">
-                                        <label className='flex items-center cursor-pointer'>
-                                            <input onChange={(e) => fileChangeHandler(e)} value={'word'} type="checkbox" className='w-[22px] h-[22px] rounded-[4px] border-2 border-body checked:border-primary-purple text-primary-purple focus:ring-0 focus:ring-offset-0' />
-                                            <span className='text-body text-sm font-normal ml-2'>Word document</span>
-                                        </label>
-                                        <label className='flex items-center cursor-pointer'>
-                                            <input onChange={(e) => fileChangeHandler(e)} value={'image'} type="checkbox" className='w-[22px] h-[22px] rounded-[4px] border-2 border-body checked:border-primary-purple text-primary-purple focus:ring-0 focus:ring-offset-0' />
-                                            <span className='text-body text-sm font-normal ml-2'>Image</span>
-                                        </label>
-                                        <label className='flex items-center cursor-pointer'>
-                                            <input onChange={(e) => fileChangeHandler(e)} value={'presentation'} type="checkbox" className='w-[22px] h-[22px] rounded-[4px] border-2 border-body checked:border-primary-purple text-primary-purple focus:ring-0 focus:ring-offset-0' />
-                                            <span className='text-body text-sm font-normal ml-2'>Presentation</span>
-                                        </label>
-                                        <label className='flex items-center cursor-pointer'>
-                                            <input onChange={(e) => fileChangeHandler(e)} value={'pdf'} type="checkbox" className='w-[22px] h-[22px] rounded-[4px] border-2 border-body checked:border-primary-purple text-primary-purple focus:ring-0 focus:ring-offset-0' />
-                                            <span className='text-body text-sm font-normal ml-2'>PDF</span>
-                                        </label>
-                                        <label className='flex items-center cursor-pointer'>
-                                            <input onChange={(e) => fileChangeHandler(e)} value={'video'} type="checkbox" className='w-[22px] h-[22px] rounded-[4px] border-2 border-body checked:border-primary-purple text-primary-purple focus:ring-0 focus:ring-offset-0' />
-                                            <span className='text-body text-sm font-normal ml-2'>Video</span>
-                                        </label>
-                                        <label className='flex items-center cursor-pointer'>
-                                            <input onChange={(e) => fileChangeHandler(e)} value={'spreadsheet'} type="checkbox" className='w-[22px] h-[22px] rounded-[4px] border-2 border-body checked:border-primary-purple text-primary-purple focus:ring-0 focus:ring-offset-0' />
-                                            <span className='text-body text-sm font-normal ml-2'>Spreadsheet</span>
-                                        </label>
+                                        {
+                                            documents.map((doc:{label:string, value:string}, idx:number) => (
+                                            <label key={`doc_${idx}`} className='flex items-center cursor-pointer'>
+                                                <input 
+                                                    onChange={(e) => fileChangeHandler(e)} 
+                                                    value={doc.value} 
+                                                    type="checkbox"
+                                                    checked={docFiles.includes(doc.value)} 
+                                                    className='w-[22px] h-[22px] rounded-[4px] border-2 border-body checked:border-primary-purple text-primary-purple focus:ring-0 focus:ring-offset-0' />
+                                                <span className='text-body text-sm font-normal ml-2'>{doc.label}</span>
+                                            </label>
+                                            ))
+                                        }
                                     </div>
                                     <div className="border rounded-lg border-primary-stroke flex justify-between p-4 text-primary text-sm mb-6">
                                         <p>Maximum video length</p>
@@ -665,7 +778,7 @@ const PreviewWIndow = ({ visible = false, onClose, state, onChangeHandler }:Prev
                                 </div>
                                 <div className='w-9/12 max-w-full mt-5 smMax:w-full'>
                                     {
-                                        teams.map((team, idx) => (
+                                        teams?.data.map((team:any, idx:number) => (
                                             <div key={`team_${idx}`} className="flex items-center justify-between border-b border-primary-stroke last-of-type:border-0 mb-4 pb-2">
                                                 <div className="flex items-center w-5/12 text-sm text-primary smMax:flex-col smMax:w-5/12 smMax:items-start">
                                                     <p>{team.email}</p>
@@ -710,6 +823,21 @@ const PreviewWIndow = ({ visible = false, onClose, state, onChangeHandler }:Prev
                 onChangeHandler={onChangeHandler}
                 visible={visbleWhoCanApply}
                 onClose={() => setVisibleWhoCanApply(false)} />
+            <CategoryModal
+                state={state}
+                visible={visibleCatModal}
+                onChangeHandler={onChangeHandler}
+                onClose={() => setVisibleCatModal(false)} />
+            <DeadlineModal
+                onChangeHandler={onChangeHandler}
+                state={state}
+                visible={visibleDeadlineModal}
+                onClose={() => setVisibleDeadlineModal(false)} />
+            <AwardModal
+                onChangeHandler={onChangeHandler}
+                onClose={() => setVisibleAwardModal(false)}
+                visible={visibleAwardModal}
+                state={state} />
             <CropModal
                 isVisible={visibleCropModal}
                 onSave={onSave}

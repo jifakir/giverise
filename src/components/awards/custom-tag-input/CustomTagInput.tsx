@@ -16,7 +16,7 @@ const CustomTagInput = ({ tags = [], onChange, placeholder = 'Add search keyword
     const [tagInputs, setTagInputs] = useState<string[]>(tags);
 
     const addTag = () => {
-        if (value.length > tagCharacterLimit || tagInputs.length > tagLimit) return;
+        if (value.length > tagCharacterLimit || tagInputs.length >= tagLimit) return;
 
         const items = [...tagInputs, value];
         setValue('');
