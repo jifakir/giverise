@@ -21,7 +21,7 @@ export type DocumentType = {
 export type awardForm = {
     campaignId: number | null
     title: string
-    description: Descendant[]
+    description: Descendant[] | any
     region: string
     criteria: object
     states: []

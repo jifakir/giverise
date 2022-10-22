@@ -19,7 +19,7 @@ export const giveriseApi = createApi({
     }),
   tagTypes: ['Cards', 'Category', 'Campaign','Invitation','Media'],
   endpoints: (builder) => ({
-    fetchCards: builder.query<Card, any>({
+    fetchCards: builder.query<any, any>({
       query: () => `/payment-gateway/stripe/cardlist`,
       providesTags: ['Cards']
     }),

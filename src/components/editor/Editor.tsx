@@ -45,6 +45,7 @@ declare module 'slate' {
 const RichTextEditor = ({ placeholder = 'Enter some rich text…', onChange, defaultValue, error }: 
     { placeholder?: string, defaultValue?:Descendant[], onChange?: (v:Descendant[]) => void, error?: string | boolean }
     ) => {
+    
     const renderElement = useCallback((props: any) => <Element {...props} />, [])
     const renderLeaf = useCallback((props: any) => <Leaf {...props} />, [])
     const [editor] = useState(() => withReact(createEditor()))

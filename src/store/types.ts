@@ -1,5 +1,5 @@
 export interface Card {
-    data: object
+    data:any
 }
 
 export interface SaveCard {

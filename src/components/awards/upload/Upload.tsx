@@ -4,7 +4,7 @@ import { DatePicker } from "../../date-picker";
 import { CustomRadio } from "../../forms";
 import UploadBox from "./UploadBox";
 
-const Upload = ({ onChangeHandler, errors }:{ errors:{ coverMedia:string, deadline:string }, onChangeHandler: (name:string, val:any) => void }) => {
+const Upload = ({ onChangeHandler, errors }:{ errors?:{ coverMedia:string, deadline:string }, onChangeHandler: (name:string, val:any) => void }) => {
 
     const [coverType, setCoverType] = useState('photo');
     const [link, setLink] = useState('');

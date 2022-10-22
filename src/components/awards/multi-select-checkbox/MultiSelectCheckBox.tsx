@@ -187,7 +187,7 @@ const MultiSelectCheckBox = (
     };
     
     useEffect(()=> {
-        setFilteredOptions([...options]);
+        setFilteredOptions(options);
     },[options])
 
     return (
